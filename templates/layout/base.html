@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Gestión Profesoral{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6 (iconos) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS Personalizado -->
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #ecf0f1;
+            --dark-text: #2c3e50;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Navbar personalizada */
+        .navbar-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white !important;
+            letter-spacing: 0.5px;
+        }
+        
+        .navbar-brand i {
+            color: var(--accent-color);
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            margin: 0 0.2rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white !important;
+            transform: translateY(-1px);
+        }
+        
+        .nav-link.active {
+            background-color: var(--accent-color);
+            color: white !important;
+        }
+        
+        .nav-link i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Dropdown menu */
+        .dropdown-menu {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-top: 0.5rem;
+        }
+        
+        .dropdown-item {
+            padding: 0.6rem 1.5rem;
+            transition: all 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--light-bg);
+            transform: translateX(5px);
+        }
+        
+        .dropdown-item i {
+            width: 25px;
+            color: var(--accent-color);
+        }
+        
+        /* Contenido principal */
+        .main-content {
+            flex: 1;
+            padding: 2rem 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 1.5rem 0;
+            margin-top: auto;
+            color: var(--dark-text);
+            font-size: 0.9rem;
+        }
+        
+        /* Tarjetas y contenedores */
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 2px solid #f0f0f0;
+            padding: 1.2rem 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        /* Botones personalizados */
+        .btn-primary {
+            background: var(--accent-color);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-outline-primary {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-danger {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-outline-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.2);
+        }
+        
+        /* Tablas */
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .table tbody tr {
+            transition: background 0.2s;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Modales personalizados */
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-bottom: none;
+            padding: 1.2rem 1.5rem;
+        }
+        
+        .modal-header .btn-close {
+            background: white;
+            opacity: 0.8;
+            border-radius: 50%;
+            padding: 0.5rem;
+        }
+        
+        .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid #dee2e6;
+            padding: 1rem 1.5rem;
+        }
+        
+        /* Formularios */
+        .form-label {
+            font-weight: 500;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        /* Alertas */
+        .alert {
+            border: none;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Badges y etiquetas */
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        
+        /* Animaciones */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .navbar-brand i {
+                font-size: 1.4rem;
+            }
+            
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .table {
+                font-size: 0.9rem;
+            }
+            
+            .dropdown-menu {
+                position: static !important;
+                float: none;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar principal -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home.index') }}">
+                <i class="fas fa-university"></i>
+                Gestión Profesoral
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Inicio -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and 'home.index' in request.endpoint %}active{% endif %}" 
+                           href="{{ url_for('home.index') }}">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                    </li>
+
+                    <!-- Tablas Principales Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="principalesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-table"></i> Tablas Principales
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'red' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('red.index') }}">
+                                    <i class="fas fa-network-wired"></i> Redes
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'aliado' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('aliado.index') }}">
+                                    <i class="fas fa-handshake"></i> Aliados
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'docente' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('docente.index') }}">
+                                    <i class="fas fa-chalkboard-user"></i> Docentes
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Tablas Intermedias Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="intermediasDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-link"></i> Relaciones N:N
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'estudio_ac' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('estudio_ac.index') }}">
+                                    <i class="fas fa-graduation-cap"></i> Estudio - Área Conoc.
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'red_docente' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('red_docente.index') }}">
+                                    <i class="fas fa-users"></i> Red - Docente
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Tablas Dependientes Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="dependientesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-sitemap"></i> Tablas Dependientes
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'alianza' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('alianza.index') }}">
+                                    <i class="fas fa-handshake"></i> Alianzas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'apoyo_profesoral' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('apoyo_profesoral.index') }}">
+                                    <i class="fas fa-chalkboard"></i> Apoyo Profesoral
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'beca' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('beca.index') }}">
+                                    <i class="fas fa-trophy"></i> Becas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'docente_departamento' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('docente_departamento.index') }}">
+                                    <i class="fas fa-building"></i> Docente - Departamento
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'evaluacion_docente' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('evaluacion_docente.index') }}">
+                                    <i class="fas fa-star"></i> Evaluación Docente
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+        <div class="container-fluid fade-in">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        <i class="fas fa-copyright me-1"></i> 2026 Sistema de Gestión Profesoral
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">
+                        <i class="fas fa-database me-1"></i> Versión 2.0.0 | 
+                        <i class="fas fa-chalkboard-user me-1"></i> Todos los módulos
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS y Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts personalizados -->
+    <script>
+        // Auto-cerrar alertas después de 5 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cerrar alertas automáticamente
+            setTimeout(function() {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    var bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+
+            // Marcar el dropdown activo según la ruta actual
+            var currentPath = window.location.pathname;
+            var dropdowns = document.querySelectorAll('.dropdown-toggle');
+            
+            dropdowns.forEach(function(dropdown) {
+                var parent = dropdown.closest('.nav-item.dropdown');
+                var links = parent.querySelectorAll('.dropdown-item');
+                var isActive = false;
+                
+                links.forEach(function(link) {
+                    if (link.getAttribute('href') === currentPath) {
+                        isActive = true;
+                    }
+                });
+                
+                if (isActive) {
+                    dropdown.classList.add('active');
+                    parent.classList.add('active');
+                }
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

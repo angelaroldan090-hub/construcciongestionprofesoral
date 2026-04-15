@@ -1,0 +1,240 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Evaluación Docente{% endblock %}
+
+{% block extra_css %}
+<style>
+    .eval-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    
+    .eval-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+    }
+    
+    .calificacion-excelente {
+        background: #d4edda;
+        color: #155724;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    
+    .calificacion-buena {
+        background: #d1ecf1;
+        color: #0c5460;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    
+    .calificacion-regular {
+        background: #fff3cd;
+        color: #856404;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    
+    .calificacion-baja {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="eval-card position-relative fade-in">
+        <h1 class="h3 mb-2">
+            <i class="fas fa-star me-2"></i>Evaluación Docente
+        </h1>
+        <p class="mb-0 opacity-75">Registro de evaluaciones periódicas del cuerpo docente</p>
+        <i class="fas fa-chart-line eval-icon"></i>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('evaluacion_docente.index') }}" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <select name="limite" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                        <option value="10" {% if limite == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if limite == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if limite == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if limite == 100 %}selected{% endif %}>100</option>
+                        <option value="" {% if not limite %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-auto ms-auto">
+                    <span class="badge bg-danger">Total: {{ registros|length }} evaluaciones</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-4 text-end">
+        <a href="{{ url_for('evaluacion_docente.index', accion='nuevo', limite=limite) }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Nueva Evaluación
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Docente</th>
+                        <th>Calificación</th>
+                        <th>Semestre</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evaluacion in registros %}
+                    <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
+                        <td class="fw-bold">
+                            <i class="fas fa-user-graduate me-1 text-primary"></i>
+                            {{ evaluacion.docente_nombres or evaluacion.docente }}
+                        </td>
+                        <td>
+                            <span class="
+                                {% if evaluacion.calificacion >= 4.5 %}calificacion-excelente
+                                {% elif evaluacion.calificacion >= 3.5 %}calificacion-buena
+                                {% elif evaluacion.calificacion >= 2.5 %}calificacion-regular
+                                {% else %}calificacion-baja{% endif %}
+                            ">
+                                {{ "%.1f"|format(evaluacion.calificacion) if evaluacion.calificacion else evaluacion.calificacion }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ evaluacion.semestre }}</span>
+                        </td>
+                        <td>
+                            {% if evaluacion.calificacion >= 4.0 %}
+                                <span class="badge bg-success">Excelente</span>
+                            {% elif evaluacion.calificacion >= 3.0 %}
+                                <span class="badge bg-info">Aceptable</span>
+                            {% elif evaluacion.calificacion >= 2.0 %}
+                                <span class="badge bg-warning">Mejorable</span>
+                            {% else %}
+                                <span class="badge bg-danger">Crítico</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('evaluacion_docente.index', accion='editar', clave=evaluacion.id, limite=limite) }}" 
+                               class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('evaluacion_docente.eliminar') }}" style="display: inline;">
+                                <input type="hidden" name="id" value="{{ evaluacion.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('¿Eliminar esta evaluación?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay evaluaciones registradas</p>
+                            <a href="{{ url_for('evaluacion_docente.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus-circle me-1"></i>Crear primera evaluación
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Formulario -->
+    {% if mostrar_formulario %}
+    <div class="modal fade show" id="formModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        {% if editando %}
+                            <i class="fas fa-edit me-2"></i>Editar Evaluación
+                        {% else %}
+                            <i class="fas fa-plus-circle me-2"></i>Nueva Evaluación
+                        {% endif %}
+                    </h5>
+                    <a href="{{ url_for('evaluacion_docente.index', limite=limite) }}" class="btn-close btn-close-white"></a>
+                </div>
+                <form method="POST" action="{{ url_for('evaluacion_docente.actualizar' if editando else 'evaluacion_docente.crear') }}">
+                    <div class="modal-body">
+                        {% if editando %}
+                            <input type="hidden" name="id" value="{{ registro.id }}">
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Docente <span class="text-danger">*</span></label>
+                            <select class="form-select" name="docente" required>
+                                <option value="">Seleccionar docente</option>
+                                {% for docente in docentes %}
+                                <option value="{{ docente.cedula }}" {% if editando and registro.docente == docente.cedula %}selected{% endif %}>
+                                    {{ docente.nombres }} {{ docente.apellidos }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Calificación <span class="text-danger">*</span></label>
+                            <input type="number" step="0.1" min="0" max="5" class="form-control" name="calificacion" 
+                                   value="{{ registro.calificacion if editando else '' }}" required>
+                            <div class="form-text">Escala de 0 a 5.0</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Semestre <span class="text-danger">*</span></label>
+                            <select class="form-select" name="semestre" required>
+                                <option value="">Seleccionar semestre</option>
+                                <option value="2024-1" {% if editando and registro.semestre == '2024-1' %}selected{% endif %}>2024-1</option>
+                                <option value="2024-2" {% if editando and registro.semestre == '2024-2' %}selected{% endif %}>2024-2</option>
+                                <option value="2025-1" {% if editando and registro.semestre == '2025-1' %}selected{% endif %}>2025-1</option>
+                                <option value="2025-2" {% if editando and registro.semestre == '2025-2' %}selected{% endif %}>2025-2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ url_for('evaluacion_docente.index', limite=limite) }}" class="btn btn-light">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if editando %}<i class="fas fa-save me-1"></i> Actualizar{% else %}<i class="fas fa-plus-circle me-1"></i> Crear{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

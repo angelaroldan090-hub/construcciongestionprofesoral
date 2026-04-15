@@ -1,0 +1,88 @@
+{#
+    nav_menu.html - Menu de navegacion lateral.
+    Incluye todos los módulos disponibles.
+#}
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Sistema Gestión Profesoral</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Menu de navegacion" class="navbar-toggler" id="navToggle" />
+
+<div class="nav-scrollable">
+    <nav class="nav flex-column">
+
+        <!-- Home -->
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">
+                <span class="bi bi-house-door-fill-nav-menu"></span> Inicio
+            </a>
+        </div>
+
+        <!-- Módulos Principales -->
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/red') }}" href="/red">
+                <span class="bi bi-list-nested-nav-menu"></span> Redes
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/aliado') }}" href="/aliado">
+                <span class="bi bi-list-nested-nav-menu"></span> Aliados
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/docente') }}" href="/docente">
+                <span class="bi bi-list-nested-nav-menu"></span> Docentes
+            </a>
+        </div>
+
+        <!-- Tablas Intermedias -->
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/estudio_ac') }}" href="/estudio_ac">
+                <span class="bi bi-list-nested-nav-menu"></span> Estudio - Área Conoc.
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/red_docente') }}" href="/red_docente">
+                <span class="bi bi-list-nested-nav-menu"></span> Red - Docente
+            </a>
+        </div>
+
+        <!-- Tablas Dependientes -->
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/alianza') }}" href="/alianza">
+                <span class="bi bi-list-nested-nav-menu"></span> Alianzas
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/apoyo_profesoral') }}" href="/apoyo_profesoral">
+                <span class="bi bi-list-nested-nav-menu"></span> Apoyo Profesoral
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/beca') }}" href="/beca">
+                <span class="bi bi-list-nested-nav-menu"></span> Becas
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/docente_departamento') }}" href="/docente_departamento">
+                <span class="bi bi-list-nested-nav-menu"></span> Docente - Departamento
+            </a>
+        </div>
+
+        <div class="nav-item px-3">
+            <a class="nav-link {{ 'active' if request.path.startswith('/evaluacion_docente') }}" href="/evaluacion_docente">
+                <span class="bi bi-list-nested-nav-menu"></span> Evaluación Docente
+            </a>
+        </div>
+
+    </nav>
+</div>

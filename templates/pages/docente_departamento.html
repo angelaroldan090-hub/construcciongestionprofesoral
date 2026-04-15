@@ -1,0 +1,228 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Vinculación Docente - Departamento{% endblock %}
+
+{% block extra_css %}
+<style>
+    .docdep-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    
+    .docdep-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+    }
+    
+    .dedicacion-badge {
+        background: #d4edda;
+        color: #155724;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="docdep-card position-relative fade-in">
+        <h1 class="h3 mb-2">
+            <i class="fas fa-user-tie me-2"></i>Vinculación Docente - Departamento
+        </h1>
+        <p class="mb-0 opacity-75">Registro de la vinculación de docentes a departamentos académicos</p>
+        <i class="fas fa-building docdep-icon"></i>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('docente_departamento.index') }}" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <select name="limite" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                        <option value="10" {% if limite == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if limite == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if limite == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if limite == 100 %}selected{% endif %}>100</option>
+                        <option value="" {% if not limite %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-auto ms-auto">
+                    <span class="badge bg-primary">Total: {{ registros|length }} vinculaciones</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-4 text-end">
+        <a href="{{ url_for('docente_departamento.index', accion='nuevo', limite=limite) }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculación
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Docente</th>
+                        <th>Departamento</th>
+                        <th>Dedicación</th>
+                        <th>Modalidad</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Fecha Salida</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vinculacion in registros %}
+                    <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
+                        <td class="fw-bold">
+                            <i class="fas fa-user-graduate me-1 text-primary"></i>
+                            {{ vinculacion.docente_nombres or vinculacion.docente }}
+                        </td>
+                        <td>{{ vinculacion.departamento_nombre or vinculacion.departamento }}</td>
+                        <td>
+                            <span class="dedicacion-badge">{{ vinculacion.dedicacion }}</span>
+                        </td>
+                        <td>{{ vinculacion.modalidad }}</td>
+                        <td>{{ vinculacion.fecha_ingreso }}</td>
+                        <td>{{ vinculacion.fecha_salida or 'Activo' }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('docente_departamento.index', accion='editar', clave=vinculacion.docente|string + '|' + vinculacion.departamento|string, limite=limite) }}" 
+                               class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('docente_departamento.eliminar') }}" style="display: inline;">
+                                <input type="hidden" name="docente" value="{{ vinculacion.docente }}">
+                                <input type="hidden" name="departamento" value="{{ vinculacion.departamento }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('¿Eliminar esta vinculación?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="fas fa-user-tie fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No hay vinculaciones registradas</p>
+                            <a href="{{ url_for('docente_departamento.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus-circle me-1"></i>Crear primera vinculación
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Formulario -->
+    {% if mostrar_formulario %}
+    <div class="modal fade show" id="formModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        {% if editando %}
+                            <i class="fas fa-edit me-2"></i>Editar Vinculación
+                        {% else %}
+                            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculación
+                        {% endif %}
+                    </h5>
+                    <a href="{{ url_for('docente_departamento.index', limite=limite) }}" class="btn-close btn-close-white"></a>
+                </div>
+                <form method="POST" action="{{ url_for('docente_departamento.actualizar' if editando else 'docente_departamento.crear') }}">
+                    <div class="modal-body">
+                        {% if editando %}
+                            <input type="hidden" name="docente" value="{{ registro.docente }}">
+                            <input type="hidden" name="departamento" value="{{ registro.departamento }}">
+                        {% endif %}
+                        
+                        {% if not editando %}
+                        <div class="mb-3">
+                            <label class="form-label">Docente <span class="text-danger">*</span></label>
+                            <select class="form-select" name="docente" required>
+                                <option value="">Seleccionar docente</option>
+                                {% for docente in docentes %}
+                                <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Departamento <span class="text-danger">*</span></label>
+                            <select class="form-select" name="departamento" required>
+                                <option value="">Seleccionar departamento</option>
+                                <option value="1">Departamento de Sistemas</option>
+                                <option value="2">Departamento de Electrónica</option>
+                                <option value="3">Departamento de Industrial</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Dedicación <span class="text-danger">*</span></label>
+                            <select class="form-select" name="dedicacion" required>
+                                <option value="">Seleccionar dedicación</option>
+                                <option value="Tiempo Completo" {% if editando and registro.dedicacion == 'Tiempo Completo' %}selected{% endif %}>Tiempo Completo</option>
+                                <option value="Medio Tiempo" {% if editando and registro.dedicacion == 'Medio Tiempo' %}selected{% endif %}>Medio Tiempo</option>
+                                <option value="Cátedra" {% if editando and registro.dedicacion == 'Cátedra' %}selected{% endif %}>Cátedra</option>
+                                <option value="Ocasional" {% if editando and registro.dedicacion == 'Ocasional' %}selected{% endif %}>Ocasional</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Modalidad <span class="text-danger">*</span></label>
+                            <select class="form-select" name="modalidad" required>
+                                <option value="">Seleccionar modalidad</option>
+                                <option value="Presencial" {% if editando and registro.modalidad == 'Presencial' %}selected{% endif %}>Presencial</option>
+                                <option value="Virtual" {% if editando and registro.modalidad == 'Virtual' %}selected{% endif %}>Virtual</option>
+                                <option value="Mixta" {% if editando and registro.modalidad == 'Mixta' %}selected{% endif %}>Mixta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Ingreso <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="fecha_ingreso" value="{{ registro.fecha_ingreso if editando else '' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Salida</label>
+                                <input type="date" class="form-control" name="fecha_salida" value="{{ registro.fecha_salida if editando else '' }}">
+                                <div class="form-text">Dejar vacío si está activo</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ url_for('docente_departamento.index', limite=limite) }}" class="btn btn-light">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if editando %}<i class="fas fa-save me-1"></i> Actualizar{% else %}<i class="fas fa-plus-circle me-1"></i> Crear{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
