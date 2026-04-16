@@ -31,7 +31,16 @@ def index():
     
     # Obtener datos para selects
     estudios = api.listar('estudios_realizados')
-    
+    estudios_por_id = {str(e.get('id')): e for e in estudios}
+
+    # Unir el registro de apoyo con el estudio correspondiente para mostrar el título correctamente
+    for registro_apoyo in registros:
+        estudio_id = str(registro_apoyo.get('estudios') or registro_apoyo.get('estudio') or '')
+        estudio_relacionado = estudios_por_id.get(estudio_id)
+        if estudio_relacionado:
+            registro_apoyo['estudio_titulo'] = estudio_relacionado.get('titulo')
+            registro_apoyo['estudio_universidad'] = estudio_relacionado.get('universidad')
+
     return render_template('pages/apoyo_profesoral.html',
         registros=registros,
         mostrar_formulario=mostrar_formulario,
