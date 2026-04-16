@@ -1,6 +1,6 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Vinculación Docente - Departamento{% endblock %}
+{% block title %}Vinculacion Docente - Departamento{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -27,6 +27,27 @@
         border-radius: 20px;
         font-size: 0.75rem;
     }
+    
+    .sugerencias-dropdown {
+        position: absolute;
+        width: 100%;
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .sugerencia-item {
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .sugerencia-item:hover {
+        background-color: #f8f9fa;
+    }
 </style>
 {% endblock %}
 
@@ -34,9 +55,9 @@
 <div class="container-fluid py-4">
     <div class="docdep-card position-relative fade-in">
         <h1 class="h3 mb-2">
-            <i class="fas fa-user-tie me-2"></i>Vinculación Docente - Departamento
+            <i class="fas fa-user-tie me-2"></i>Vinculacion Docente - Departamento
         </h1>
-        <p class="mb-0 opacity-75">Registro de la vinculación de docentes a departamentos académicos</p>
+        <p class="mb-0 opacity-75">Registro de la vinculacion de docentes a departamentos academicos</p>
         <i class="fas fa-building docdep-icon"></i>
     </div>
 
@@ -54,9 +75,9 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ url_for('docente_departamento.index') }}" class="row g-3 align-items-center">
+            <div class="row g-3 align-items-center">
                 <div class="col-auto">
-                    <select name="limite" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <select name="limite" class="form-select form-select-sm" style="width: auto;" onchange="location.href='/docente_departamento?limite=' + this.value">
                         <option value="10" {% if limite == 10 %}selected{% endif %}>10</option>
                         <option value="25" {% if limite == 25 %}selected{% endif %}>25</option>
                         <option value="50" {% if limite == 50 %}selected{% endif %}>50</option>
@@ -64,27 +85,50 @@
                         <option value="" {% if not limite %}selected{% endif %}>Todos</option>
                     </select>
                 </div>
-                <div class="col-auto ms-auto">
+                <div class="col">
+                    <div class="position-relative">
+                        <div class="input-group">
+                            <input type="text" id="buscadorVinculacion" class="form-control" 
+                                   placeholder="Buscar por docente, departamento, dedicacion o modalidad..." 
+                                   autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" id="btnLimpiar" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="sugerenciasLista" class="sugerencias-dropdown" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="col-auto">
                     <span class="badge bg-primary">Total: {{ registros|length }} vinculaciones</span>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
+    {% if busqueda %}
+    <div class="alert alert-info alert-dismissible fade show mb-3">
+        <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{ registros|length }} vinculacion(es)
+        <a href="{{ url_for('docente_departamento.index') }}" class="float-end text-decoration-none">Limpiar busqueda</a>
+    </div>
+    {% endif %}
+
     <div class="mb-4 text-end">
         <a href="{{ url_for('docente_departamento.index', accion='nuevo', limite=limite) }}" class="btn btn-primary">
-            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculación
+            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculacion
         </a>
     </div>
 
     <div class="card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
+            <table class="table table-hover table-striped mb-0" id="tablaVinculaciones">
                 <thead class="table-light">
                     <tr>
                         <th>Docente</th>
                         <th>Departamento</th>
-                        <th>Dedicación</th>
+                        <th>Dedicacion</th>
                         <th>Modalidad</th>
                         <th>Fecha Ingreso</th>
                         <th>Fecha Salida</th>
@@ -96,7 +140,7 @@
                     <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
                         <td class="fw-bold">
                             <i class="fas fa-user-graduate me-1 text-primary"></i>
-                            {{ vinculacion.docente_nombres or vinculacion.docente }}
+                            {{ vinculacion.docente_nombre or vinculacion.docente_nombres or vinculacion.docente }}
                         </td>
                         <td>{{ vinculacion.departamento_nombre or vinculacion.departamento }}</td>
                         <td>
@@ -114,7 +158,7 @@
                                 <input type="hidden" name="docente" value="{{ vinculacion.docente }}">
                                 <input type="hidden" name="departamento" value="{{ vinculacion.departamento }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                        onclick="return confirm('¿Eliminar esta vinculación?')">
+                                        onclick="return confirm('¿Eliminar esta vinculacion?')">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </form>
@@ -126,7 +170,7 @@
                             <i class="fas fa-user-tie fa-3x text-muted mb-3"></i>
                             <p class="text-muted">No hay vinculaciones registradas</p>
                             <a href="{{ url_for('docente_departamento.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-plus-circle me-1"></i>Crear primera vinculación
+                                <i class="fas fa-plus-circle me-1"></i>Crear primera vinculacion
                             </a>
                         </td>
                     </tr>
@@ -144,9 +188,9 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         {% if editando %}
-                            <i class="fas fa-edit me-2"></i>Editar Vinculación
+                            <i class="fas fa-edit me-2"></i>Editar Vinculacion
                         {% else %}
-                            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculación
+                            <i class="fas fa-plus-circle me-2"></i>Nueva Vinculacion
                         {% endif %}
                     </h5>
                     <a href="{{ url_for('docente_departamento.index', limite=limite) }}" class="btn-close btn-close-white"></a>
@@ -181,12 +225,12 @@
                         {% endif %}
                         
                         <div class="mb-3">
-                            <label class="form-label">Dedicación <span class="text-danger">*</span></label>
+                            <label class="form-label">Dedicacion <span class="text-danger">*</span></label>
                             <select class="form-select" name="dedicacion" required>
-                                <option value="">Seleccionar dedicación</option>
+                                <option value="">Seleccionar dedicacion</option>
                                 <option value="Tiempo Completo" {% if editando and registro.dedicacion == 'Tiempo Completo' %}selected{% endif %}>Tiempo Completo</option>
                                 <option value="Medio Tiempo" {% if editando and registro.dedicacion == 'Medio Tiempo' %}selected{% endif %}>Medio Tiempo</option>
-                                <option value="Cátedra" {% if editando and registro.dedicacion == 'Cátedra' %}selected{% endif %}>Cátedra</option>
+                                <option value="Catedra" {% if editando and registro.dedicacion == 'Catedra' %}selected{% endif %}>Catedra</option>
                                 <option value="Ocasional" {% if editando and registro.dedicacion == 'Ocasional' %}selected{% endif %}>Ocasional</option>
                             </select>
                         </div>
@@ -209,7 +253,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Fecha Salida</label>
                                 <input type="date" class="form-control" name="fecha_salida" value="{{ registro.fecha_salida if editando else '' }}">
-                                <div class="form-text">Dejar vacío si está activo</div>
+                                <div class="form-text">Dejar vacio si esta activo</div>
                             </div>
                         </div>
                     </div>
@@ -225,4 +269,106 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Buscador desplegable
+const buscadorInput = document.getElementById('buscadorVinculacion');
+const sugerenciasLista = document.getElementById('sugerenciasLista');
+const btnLimpiar = document.getElementById('btnLimpiar');
+const btnBuscar = document.getElementById('btnBuscar');
+let timeoutId = null;
+
+function buscarSugerencias() {
+    const query = buscadorInput.value.trim();
+    
+    if (query.length < 2) {
+        sugerenciasLista.style.display = 'none';
+        btnLimpiar.style.display = 'none';
+        return;
+    }
+    
+    btnLimpiar.style.display = 'block';
+    
+    fetch(`/docente_departamento/sugerencias?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                sugerenciasLista.innerHTML = '';
+                data.forEach(vinculacion => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item list-group-item-action sugerencia-item';
+                    item.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${vinculacion.docente_nombre}</strong>
+                                <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                ${vinculacion.departamento_nombre}
+                            </div>
+                            <small class="text-muted">${vinculacion.dedicacion || ''}</small>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            <i class="fas fa-clock me-1"></i>${vinculacion.modalidad || ''} | ${vinculacion.fecha_ingreso || ''}
+                        </div>
+                    `;
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.location.href = `/docente_departamento?accion=editar&clave=${vinculacion.docente}|${vinculacion.departamento}`;
+                    });
+                    sugerenciasLista.appendChild(item);
+                });
+                sugerenciasLista.style.display = 'block';
+            } else {
+                sugerenciasLista.innerHTML = '<div class="list-group-item text-muted">No se encontraron vinculaciones</div>';
+                sugerenciasLista.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            sugerenciasLista.style.display = 'none';
+        });
+}
+
+function limpiarBusqueda() {
+    buscadorInput.value = '';
+    sugerenciasLista.style.display = 'none';
+    btnLimpiar.style.display = 'none';
+    window.location.href = '/docente_departamento';
+}
+
+buscadorInput.addEventListener('keyup', function() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(buscarSugerencias, 300);
+});
+
+buscadorInput.addEventListener('focus', function() {
+    if (buscadorInput.value.trim().length >= 2) {
+        buscarSugerencias();
+    }
+});
+
+btnLimpiar.addEventListener('click', limpiarBusqueda);
+
+btnBuscar.addEventListener('click', function() {
+    const query = buscadorInput.value.trim();
+    if (query) {
+        window.location.href = `/docente_departamento/buscar?q=${encodeURIComponent(query)}`;
+    }
+});
+
+buscadorInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = buscadorInput.value.trim();
+        if (query) {
+            window.location.href = `/docente_departamento/buscar?q=${encodeURIComponent(query)}`;
+        }
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!buscadorInput.contains(e.target) && !sugerenciasLista.contains(e.target)) {
+        sugerenciasLista.style.display = 'none';
+    }
+});
+</script>
 {% endblock %}
