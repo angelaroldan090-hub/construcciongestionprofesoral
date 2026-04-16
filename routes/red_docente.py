@@ -2,7 +2,7 @@
 red_docente.py - Blueprint para tabla intermedia (N:N) entre Red y Docente
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from services.api_service import ApiService
 
 bp = Blueprint('red_docente', __name__)
@@ -19,6 +19,14 @@ def index():
     # Obtener datos para selects
     redes = api.listar('red')
     docentes = api.listar('docente')
+    
+    # Enriquecer registros con nombres
+    redes_dict = {str(r.get('id')): r.get('nombre', '') for r in redes}
+    docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+    
+    for r in registros:
+        r['red_nombre'] = redes_dict.get(str(r.get('red', '')), '')
+        r['docente_nombre'] = docentes_dict.get(str(r.get('docente', '')), '')
     
     # Manejo de formulario modal
     accion = request.args.get('accion')
@@ -52,6 +60,114 @@ def index():
         redes=redes,
         docentes=docentes
     )
+
+@bp.route('/red_docente/buscar')
+def buscar():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', type=int)
+    
+    registros = api.listar(TABLA, limite)
+    
+    if query:
+        query_lower = query.lower()
+        # Obtener datos relacionados para busqueda
+        redes = api.listar('red')
+        docentes = api.listar('docente')
+        
+        # Crear diccionarios para busqueda rapida
+        redes_dict = {str(r.get('id')): r.get('nombre', '') for r in redes}
+        docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+        
+        resultados = []
+        for r in registros:
+            red_str = str(r.get('red', ''))
+            docente_str = str(r.get('docente', ''))
+            
+            red_nombre = redes_dict.get(red_str, '')
+            docente_nombre = docentes_dict.get(docente_str, '')
+            
+            if (query_lower in red_str or
+                query_lower in red_nombre.lower() or
+                query_lower in docente_str or
+                query_lower in docente_nombre.lower() or
+                (r.get('act_destacadas') and query_lower in r.get('act_destacadas', '').lower())):
+                
+                # Enriquecer registro con nombres
+                r['red_nombre'] = red_nombre
+                r['docente_nombre'] = docente_nombre
+                resultados.append(r)
+        
+        registros = resultados
+    else:
+        # Enriquecer todos los registros con nombres
+        redes = api.listar('red')
+        docentes = api.listar('docente')
+        
+        redes_dict = {str(r.get('id')): r.get('nombre', '') for r in redes}
+        docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+        
+        for r in registros:
+            r['red_nombre'] = redes_dict.get(str(r.get('red', '')), '')
+            r['docente_nombre'] = docentes_dict.get(str(r.get('docente', '')), '')
+    
+    # Obtener datos para selects
+    redes = api.listar('red')
+    docentes = api.listar('docente')
+    
+    return render_template('pages/red_docente.html',
+        registros=registros,
+        mostrar_formulario=False,
+        editando=False,
+        registro=None,
+        limite=limite,
+        redes=redes,
+        docentes=docentes,
+        busqueda=query
+    )
+
+@bp.route('/red_docente/sugerencias')
+def sugerencias():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', 10)
+    
+    registros = api.listar(TABLA)
+    
+    if query:
+        query_lower = query.lower()
+        # Obtener datos relacionados
+        redes = api.listar('red')
+        docentes = api.listar('docente')
+        
+        redes_dict = {str(r.get('id')): r.get('nombre', '') for r in redes}
+        docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+        
+        resultados = []
+        for r in registros:
+            red_str = str(r.get('red', ''))
+            docente_str = str(r.get('docente', ''))
+            
+            red_nombre = redes_dict.get(red_str, '')
+            docente_nombre = docentes_dict.get(docente_str, '')
+            
+            if (query_lower in red_str or
+                query_lower in red_nombre.lower() or
+                query_lower in docente_str or
+                query_lower in docente_nombre.lower()):
+                
+                resultados.append({
+                    'red': r.get('red'),
+                    'red_nombre': red_nombre,
+                    'docente': r.get('docente'),
+                    'docente_nombre': docente_nombre,
+                    'fecha_inicio': r.get('fecha_inicio'),
+                    'fecha_fin': r.get('fecha_fin'),
+                    'act_destacadas': r.get('act_destacadas'),
+                    'texto': f"{red_nombre} - {docente_nombre}"
+                })
+        
+        return jsonify(resultados[:limite])
+    
+    return jsonify([])
 
 @bp.route('/red_docente/crear', methods=['POST'])
 def crear():

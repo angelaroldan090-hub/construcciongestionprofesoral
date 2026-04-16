@@ -42,6 +42,14 @@ def index():
             None
         )
         vinculaciones = api.listar_vinculaciones_docente(valor_clave)
+        
+        # DEPURACION
+        print(f"=== DEPURACION VINCULACIONES ===")
+        print(f"Docente ID: {valor_clave}")
+        print(f"Vinculaciones encontradas: {len(vinculaciones)}")
+        for v in vinculaciones:
+            print(f"  - {v}")
+        print(f"================================")
     
     # Obtener listas para selects
     lineas = api.listar('linea_investigacion')
