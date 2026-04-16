@@ -51,6 +51,61 @@ def index():
         docentes=docentes
     )
 
+@bp.route('/aliado/buscar')
+def buscar():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', type=int)
+    
+    registros = api.listar(TABLA, limite)
+    
+    if query:
+        query_lower = query.lower()
+        registros = [
+            r for r in registros 
+            if query_lower in str(r.get('nit', '')).lower()
+            or query_lower in r.get('razon_social', '').lower()
+            or query_lower in r.get('nombre_contacto', '').lower()
+            or query_lower in r.get('correo', '').lower()
+            or query_lower in r.get('ciudad', '').lower()
+        ]
+    
+    return render_template('pages/aliado.html',
+        registros=registros,
+        mostrar_formulario=False,
+        editando=False,
+        registro=None,
+        alianzas=[],
+        limite=limite,
+        departamentos=api.listar('programa'),
+        docentes=api.listar('docente'),
+        busqueda=query
+    )
+
+@bp.route('/aliado/sugerencias')
+def sugerencias():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', 10)
+    
+    registros = api.listar(TABLA)
+    
+    if query:
+        query_lower = query.lower()
+        resultados = []
+        for r in registros:
+            if (query_lower in str(r.get('nit', '')).lower() or
+                query_lower in r.get('razon_social', '').lower() or
+                query_lower in r.get('nombre_contacto', '').lower()):
+                resultados.append({
+                    'nit': r.get('nit'),
+                    'razon_social': r.get('razon_social'),
+                    'nombre_contacto': r.get('nombre_contacto'),
+                    'ciudad': r.get('ciudad'),
+                    'texto': f"{r.get('nit')} - {r.get('razon_social')}"
+                })
+        return jsonify(resultados[:limite])
+    
+    return jsonify([])
+
 @bp.route('/aliado/crear', methods=['POST'])
 def crear():
     datos = {

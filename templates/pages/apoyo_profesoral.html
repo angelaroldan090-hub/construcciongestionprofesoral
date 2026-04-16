@@ -91,7 +91,6 @@
                 <thead class="table-light">
                     <tr>
                         <th>Estudio</th>
-                        <th>Universidad</th>
                         <th>Con Apoyo</th>
                         <th>Institución</th>
                         <th>Tipo de Apoyo</th>
@@ -103,9 +102,8 @@
                     <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
                         <td class="fw-bold">
                             <i class="fas fa-graduation-cap me-1 text-success"></i>
-                            {{ apoyo.estudio_titulo or apoyo.estudio }}
+                            {{ apoyo.estudio_titulo or apoyo.estudios or apoyo.estudio }}
                         </td>
-                        <td>{{ apoyo.universidad or '-' }}</td>
                         <td>
                             {% if apoyo.con_apoyo %}
                                 <span class="apoyo-badge"><i class="fas fa-check-circle me-1"></i>Sí</span>
@@ -131,7 +129,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center py-5">
+                        <td colspan="5" class="text-center py-5">
                             <i class="fas fa-hand-holding-heart fa-3x text-muted mb-3"></i>
                             <p class="text-muted">No hay apoyos registrados</p>
                             <a href="{{ url_for('apoyo_profesoral.index', accion='nuevo') }}" class="btn btn-primary btn-sm">

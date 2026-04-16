@@ -31,7 +31,16 @@ def index():
     
     # Obtener datos para selects
     estudios = api.listar('estudios_realizados')
-    
+    estudios_por_id = {str(e.get('id')): e for e in estudios}
+
+    # Unir cada beca con el estudio correspondiente para mostrar el título y la universidad
+    for registro_beca in registros:
+        estudio_id = str(registro_beca.get('estudios') or registro_beca.get('estudio') or '')
+        estudio_relacionado = estudios_por_id.get(estudio_id)
+        if estudio_relacionado:
+            registro_beca['estudio_titulo'] = estudio_relacionado.get('titulo')
+            registro_beca['estudio_universidad'] = estudio_relacionado.get('universidad')
+
     return render_template('pages/beca.html',
         registros=registros,
         mostrar_formulario=mostrar_formulario,
