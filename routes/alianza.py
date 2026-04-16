@@ -35,6 +35,7 @@ def index():
         docentes = api.listar('docente')
         departamentos = api.listar('programa')
         
+        
         return render_template('pages/alianza.html',
             registros=registros,
             mostrar_formulario=mostrar_formulario,
