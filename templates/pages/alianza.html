@@ -161,8 +161,9 @@
                             <label class="form-label">Departamento <span class="text-danger">*</span></label>
                             <select class="form-select" name="departamento" required>
                                 <option value="">Seleccionar departamento</option>
-                                <option value="1">Departamento de Sistemas</option>
-                                <option value="2">Departamento de Electrónica</option>
+                                {% for departamento in departamentos %}
+                                <option value="{{ departamento.id }}">{{ departamento.nombre }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         {% endif %}

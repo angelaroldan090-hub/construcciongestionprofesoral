@@ -1,5 +1,5 @@
 """
-red_docente.py - Blueprint para la tabla intermedia red_docente (N:N entre red y docente)
+red_docente.py - Blueprint para tabla intermedia (N:N) entre Red y Docente
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
