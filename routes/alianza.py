@@ -24,28 +24,26 @@ def index():
     
     registro = None
     if editando and valor_clave:
-        # Buscar por clave compuesta (aliado|departamento)
         registro = next(
             (r for r in registros if f"{r.get('aliado')}|{r.get('departamento')}" == valor_clave),
             None
         )
     
     # Obtener datos para selects
-        aliados = api.listar('aliado')
-        docentes = api.listar('docente')
-        departamentos = api.listar('programa')
-        
-        
-        return render_template('pages/alianza.html',
-            registros=registros,
-            mostrar_formulario=mostrar_formulario,
-            editando=editando,
-            registro=registro,
-            limite=limite,
-            aliados=aliados,
-            docentes=docentes,
-            departamentos=departamentos
-        )
+    aliados = api.listar('aliado')
+    docentes = api.listar('docente')
+    departamentos = api.listar('programa')
+    
+    return render_template('pages/alianza.html',
+        registros=registros,
+        mostrar_formulario=mostrar_formulario,
+        editando=editando,
+        registro=registro,
+        limite=limite,
+        aliados=aliados,
+        docentes=docentes,
+        departamentos=departamentos
+    )
 
 @bp.route('/alianza/crear', methods=['POST'])
 def crear():
