@@ -65,14 +65,31 @@ def crear():
 def actualizar():
     aliado = request.form.get('aliado', '')
     departamento = request.form.get('departamento', '')
+
+    try:
+        aliado_id = int(aliado)
+        departamento_id = int(departamento)
+    except (ValueError, TypeError):
+        flash('ID de aliado o departamento inválido.', 'danger')
+        return redirect(url_for('alianza.index'))
+
     datos = {
+        'aliado': aliado_id,
+        'departamento': departamento_id,
         'fecha_inicio': request.form.get('fecha_inicio', ''),
         'fecha_fin': request.form.get('fecha_fin', '') or None,
         'docente': request.form.get('docente', '') or None
     }
-    
-    exito, mensaje = api.actualizar_compuesta(TABLA, ['aliado', 'departamento'], [aliado, departamento], datos)
-    flash(mensaje, 'success' if exito else 'danger')
+
+    exito_eliminar, _ = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
+
+    if exito_eliminar:
+        exito_crear, mensaje = api.crear(TABLA, datos)
+        flash('Alianza actualizada exitosamente.' if exito_crear else f'Error al recrear: {mensaje}',
+              'success' if exito_crear else 'danger')
+    else:
+        flash('Error al actualizar la alianza.', 'danger')
+
     return redirect(url_for('alianza.index'))
 
 @bp.route('/alianza/eliminar', methods=['POST'])
