@@ -20,3 +20,20 @@ API_BASE_URL = "http://localhost:5035"
 # En produccion deberia ser un valor aleatorio largo guardado en variable de entorno.
 # ──────────────────────────────────────────────
 SECRET_KEY = "clave-secreta-flask-frontend-2024"
+
+# ──────────────────────────────────────────────
+# Configuración de conexión directa a PostgreSQL.
+# Los valores se leen del archivo .env (no se sube al git).
+# ──────────────────────────────────────────────
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', '5432')),
+    'database': os.getenv('DB_NAME', 'mapaConocimiento'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', '')
+}

@@ -169,7 +169,10 @@ def crear_alianza():
 def eliminar_alianza():
     """Eliminar alianza"""
     data = request.json
-    exito, mensaje = api.eliminar_compuesta('alianza', ['aliado', 'departamento'], [data.get('aliado'), data.get('departamento')])
+    exito, mensaje = api.eliminar_compuesta_bd('alianza', {
+        'aliado': data.get('aliado'),
+        'departamento': data.get('departamento')
+    })
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/alianza/actualizar', methods=['POST'])
