@@ -5,19 +5,47 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <h3 class="card-title mb-2 mb-sm-0">
                         <i class="fas fa-chalkboard-user me-2"></i>Gestión de Docentes
                     </h3>
-                    <a href="{{ url_for('docente.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i> Nuevo Docente
-                    </a>
+                    <div class="d-flex gap-2">
+                        <div class="position-relative">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="buscadorDocente" class="form-control"
+                                    placeholder="Buscar docente por cedula o nombre..." autocomplete="off"
+                                    style="min-width: 280px;">
+                                <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" type="button" id="btnLimpiar"
+                                    style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="sugerenciasLista" class="list-group position-absolute w-100"
+                                style="display: none; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                            </div>
+                        </div>
+                        <a href="{{ url_for('docente.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Nuevo Docente
+                        </a>
+                    </div>
                 </div>
-                
+
                 <div class="card-body">
+                    {% if busqueda %}
+                    <div class="alert alert-info alert-sm mb-3">
+                        <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{
+                        registros|length }} docente(s)
+                        <a href="{{ url_for('docente.index') }}" class="float-end text-decoration-none">Limpiar
+                            busqueda</a>
+                    </div>
+                    {% endif %}
+
                     <!-- Tabla de docentes -->
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover">
+                        <table class="table table-bordered table-striped table-hover" id="tablaDocentes">
                             <thead>
                                 <tr>
                                     <th>Cédula</th>
@@ -38,12 +66,12 @@
                                     <td>{{ docente.correo }}</td>
                                     <td>{{ docente.cargo }}</td>
                                     <td class="text-center">
-                                        <a href="{{ url_for('docente.index', accion='editar', clave=docente.cedula) }}" 
-                                           class="btn btn-warning btn-sm" title="Editar">
+                                        <a href="{{ url_for('docente.index', accion='editar', clave=docente.cedula) }}"
+                                            class="btn btn-warning btn-sm" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button class="btn btn-danger btn-sm" title="Eliminar" 
-                                                onclick="eliminarDocente('{{ docente.cedula }}')">
+                                        <button class="btn btn-danger btn-sm" title="Eliminar"
+                                            onclick="eliminarDocente('{{ docente.cedula }}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -74,34 +102,35 @@
                     </h5>
                     <a href="{{ url_for('docente.index') }}" class="btn-close"></a>
                 </div>
-                <form method="POST" action="{{ url_for('docente.actualizar') if editando else url_for('docente.crear') }}">
+                <form method="POST"
+                    action="{{ url_for('docente.actualizar') if editando else url_for('docente.crear') }}">
                     <div class="modal-body">
                         <input type="hidden" name="cedula" value="{{ registro.cedula if registro else '' }}">
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Cédula *</label>
-                                    <input type="number" name="cedula" class="form-control" 
-                                           value="{{ registro.cedula if registro else '' }}" 
-                                           {% if editando %}readonly{% endif %} required>
+                                    <input type="number" name="cedula" class="form-control"
+                                        value="{{ registro.cedula if registro else '' }}" {% if editando %}readonly{%
+                                        endif %} required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Nombres *</label>
-                                    <input type="text" name="nombres" class="form-control" 
-                                           value="{{ registro.nombres if registro else '' }}" required>
+                                    <input type="text" name="nombres" class="form-control"
+                                        value="{{ registro.nombres if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Apellidos *</label>
-                                    <input type="text" name="apellidos" class="form-control" 
-                                           value="{{ registro.apellidos if registro else '' }}" required>
+                                    <input type="text" name="apellidos" class="form-control"
+                                        value="{{ registro.apellidos if registro else '' }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -109,92 +138,95 @@
                                     <label class="form-label">Género *</label>
                                     <select name="genero" class="form-select" required>
                                         <option value="">Seleccione</option>
-                                        <option value="Masculino" {% if registro and registro.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
-                                        <option value="Femenino" {% if registro and registro.genero == 'Femenino' %}selected{% endif %}>Femenino</option>
-                                        <option value="Otro" {% if registro and registro.genero == 'Otro' %}selected{% endif %}>Otro</option>
+                                        <option value="Masculino" {% if registro and registro.genero=='Masculino'
+                                            %}selected{% endif %}>Masculino</option>
+                                        <option value="Femenino" {% if registro and registro.genero=='Femenino'
+                                            %}selected{% endif %}>Femenino</option>
+                                        <option value="Otro" {% if registro and registro.genero=='Otro' %}selected{%
+                                            endif %}>Otro</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Fecha Nacimiento *</label>
-                                    <input type="date" name="fecha_nacimiento" class="form-control" 
-                                           value="{{ registro.fecha_nacimiento if registro else '' }}" required>
+                                    <input type="date" name="fecha_nacimiento" class="form-control"
+                                        value="{{ registro.fecha_nacimiento if registro else '' }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Cargo *</label>
-                                    <input type="text" name="cargo" class="form-control" 
-                                           value="{{ registro.cargo if registro else '' }}" required>
+                                    <input type="text" name="cargo" class="form-control"
+                                        value="{{ registro.cargo if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Correo *</label>
-                                    <input type="email" name="correo" class="form-control" 
-                                           value="{{ registro.correo if registro else '' }}" required>
+                                    <input type="email" name="correo" class="form-control"
+                                        value="{{ registro.correo if registro else '' }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Teléfono *</label>
-                                    <input type="text" name="telefono" class="form-control" 
-                                           value="{{ registro.telefono if registro else '' }}" required>
+                                    <input type="text" name="telefono" class="form-control"
+                                        value="{{ registro.telefono if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group mb-3">
                                     <label class="form-label">URL CVLAC *</label>
-                                    <input type="url" name="url_cvlac" class="form-control" 
-                                           value="{{ registro.url_cvlac if registro else '' }}" required>
+                                    <input type="url" name="url_cvlac" class="form-control"
+                                        value="{{ registro.url_cvlac if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Escalafón *</label>
-                                    <input type="text" name="escalafon" class="form-control" 
-                                           value="{{ registro.escalafon if registro else '' }}" required>
+                                    <input type="text" name="escalafon" class="form-control"
+                                        value="{{ registro.escalafon if registro else '' }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Categoría Minciencia</label>
-                                    <input type="text" name="cat_minciencia" class="form-control" 
-                                           value="{{ registro.cat_minciencia if registro else '' }}">
+                                    <input type="text" name="cat_minciencia" class="form-control"
+                                        value="{{ registro.cat_minciencia if registro else '' }}">
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Convocatoria Minciencia *</label>
-                                    <input type="text" name="conv_minciencia" class="form-control" 
-                                           value="{{ registro.conv_minciencia if registro else '' }}" required>
+                                    <input type="text" name="conv_minciencia" class="form-control"
+                                        value="{{ registro.conv_minciencia if registro else '' }}" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Nacionalidad *</label>
-                                    <input type="text" name="nacionalidad" class="form-control" 
-                                           value="{{ registro.nacionalidad if registro else '' }}" required>
+                                    <input type="text" name="nacionalidad" class="form-control"
+                                        value="{{ registro.nacionalidad if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group mb-3">
@@ -203,8 +235,8 @@
                                         <option value="">Seleccione</option>
                                         {% if lineas %}
                                         {% for linea in lineas %}
-                                        <option value="{{ linea.id }}" 
-                                            {% if registro and registro.linea_investigacion_principal == linea.id %}selected{% endif %}>
+                                        <option value="{{ linea.id }}" {% if registro and
+                                            registro.linea_investigacion_principal==linea.id %}selected{% endif %}>
                                             {{ linea.nombre }}
                                         </option>
                                         {% endfor %}
@@ -213,22 +245,23 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Perfil *</label>
-                                    <textarea name="perfil" class="form-control" rows="3" required>{{ registro.perfil if registro else '' }}</textarea>
+                                    <textarea name="perfil" class="form-control" rows="3"
+                                        required>{{ registro.perfil if registro else '' }}</textarea>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label class="form-label">Fecha Actualización *</label>
-                                    <input type="date" name="fecha_actualizacion" class="form-control" 
-                                           value="{{ registro.fecha_actualizacion if registro else '' }}" required>
+                                    <input type="date" name="fecha_actualizacion" class="form-control"
+                                        value="{{ registro.fecha_actualizacion if registro else '' }}" required>
                                 </div>
                             </div>
                         </div>
@@ -239,7 +272,7 @@
                         <h4 class="mt-3 mb-3">
                             <i class="fas fa-building me-2"></i>Vinculaciones Departamentales
                         </h4>
-                        
+
                         <div class="table-responsive mb-3">
                             <table class="table table-sm table-bordered" id="tablaVinculaciones">
                                 <thead class="table-light">
@@ -262,8 +295,8 @@
                                         <td>{{ vinc.fecha_ingreso }}</td>
                                         <td>{{ vinc.fecha_salida or 'Actual' }}</td>
                                         <td class="text-center">
-                                            <button class="btn btn-danger btn-sm" title="Eliminar" 
-                                                    onclick="eliminarVinculacion('{{ vinc.docente }}', '{{ vinc.departamento }}')">
+                                            <button class="btn btn-danger btn-sm" title="Eliminar"
+                                                onclick="eliminarVinculacion('{{ vinc.docente }}', '{{ vinc.departamento }}')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -277,7 +310,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Formulario para nueva vinculación -->
                         <h5 class="mt-3">Agregar Nueva Vinculación</h5>
                         <div class="row g-2 align-items-end">
@@ -317,15 +350,15 @@
                                 <input type="date" id="nueva-fecha-salida" class="form-control form-control-sm">
                             </div>
                             <div class="col-md-1">
-                                <button type="button" class="btn btn-success btn-sm w-100" 
-                                        onclick="agregarVinculacion('{{ registro.cedula }}')">
+                                <button type="button" class="btn btn-success btn-sm w-100"
+                                    onclick="agregarVinculacion('{{ registro.cedula }}')">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
                         </div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="modal-footer">
                         <a href="{{ url_for('docente.index') }}" class="btn btn-secondary">Cancelar</a>
                         <button type="submit" class="btn btn-primary">
@@ -340,85 +373,181 @@
 </div>
 
 <script>
-function eliminarDocente(cedula) {
-    if(confirm('¿Está seguro de eliminar este docente?')) {
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = "{{ url_for('docente.eliminar') }}";
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'cedula';
-        input.value = cedula;
-        form.appendChild(input);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-function agregarVinculacion(docenteId) {
-    const departamento = document.getElementById('nuevo-departamento').value;
-    const fechaIngreso = document.getElementById('nueva-fecha-ingreso').value;
-    
-    if(!departamento) {
-        alert('Seleccione un departamento');
-        return;
-    }
-    if(!fechaIngreso) {
-        alert('Seleccione una fecha de ingreso');
-        return;
-    }
-    
-    const data = {
-        docente: parseInt(docenteId),
-        departamento: parseInt(departamento),
-        dedicacion: document.getElementById('nueva-dedicacion').value,
-        modalidad: document.getElementById('nueva-modalidad').value,
-        fecha_ingreso: fechaIngreso,
-        fecha_salida: document.getElementById('nueva-fecha-salida').value || null
-    };
-    
-    fetch('/api/docente_vinculacion/crear', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
+    function eliminarDocente(cedula) {
+        if (confirm('¿Está seguro de eliminar este docente?')) {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('docente.eliminar') }}";
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'cedula';
+            input.value = cedula;
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al crear la vinculación');
-    });
-}
-
-function eliminarVinculacion(docenteId, departamentoId) {
-    if(confirm('¿Eliminar esta vinculación departamental?')) {
-        fetch('/api/docente_vinculacion/eliminar', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                docente: parseInt(docenteId),
-                departamento: parseInt(departamentoId)
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al eliminar la vinculación');
-        });
     }
-}
+
+    function agregarVinculacion(docenteId) {
+        const departamento = document.getElementById('nuevo-departamento').value;
+        const fechaIngreso = document.getElementById('nueva-fecha-ingreso').value;
+
+        if (!departamento) {
+            alert('Seleccione un departamento');
+            return;
+        }
+        if (!fechaIngreso) {
+            alert('Seleccione una fecha de ingreso');
+            return;
+        }
+
+        const data = {
+            docente: parseInt(docenteId),
+            departamento: parseInt(departamento),
+            dedicacion: document.getElementById('nueva-dedicacion').value,
+            modalidad: document.getElementById('nueva-modalidad').value,
+            fecha_ingreso: fechaIngreso,
+            fecha_salida: document.getElementById('nueva-fecha-salida').value || null
+        };
+
+        fetch('/api/docente_vinculacion/crear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear la vinculación');
+            });
+    }
+
+    function eliminarVinculacion(docenteId, departamentoId) {
+        if (confirm('¿Eliminar esta vinculación departamental?')) {
+            fetch('/api/docente_vinculacion/eliminar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docente: parseInt(docenteId),
+                    departamento: parseInt(departamentoId)
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar la vinculación');
+                });
+        }
+    }
+
+    // Buscador desplegable
+    const buscadorInput = document.getElementById('buscadorDocente');
+    const sugerenciasLista = document.getElementById('sugerenciasLista');
+    const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnBuscar = document.getElementById('btnBuscar');
+    let timeoutId = null;
+
+    function buscarSugerencias() {
+        const query = buscadorInput.value.trim();
+
+        if (query.length < 2) {
+            sugerenciasLista.style.display = 'none';
+            btnLimpiar.style.display = 'none';
+            return;
+        }
+
+        btnLimpiar.style.display = 'block';
+
+        fetch(`/docente/sugerencias?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    sugerenciasLista.innerHTML = '';
+                    data.forEach(docente => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${docente.cedula}</strong> - ${docente.nombres} ${docente.apellidos}
+                            </div>
+                            <small class="text-muted">${docente.cargo || 'Sin cargo'}</small>
+                        </div>
+                    `;
+                        item.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.location.href = `/docente?accion=editar&clave=${docente.cedula}`;
+                        });
+                        sugerenciasLista.appendChild(item);
+                    });
+                    sugerenciasLista.style.display = 'block';
+                } else {
+                    sugerenciasLista.innerHTML = '<div class="list-group-item text-muted">No se encontraron docentes</div>';
+                    sugerenciasLista.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                sugerenciasLista.style.display = 'none';
+            });
+    }
+
+    function limpiarBusqueda() {
+        buscadorInput.value = '';
+        sugerenciasLista.style.display = 'none';
+        btnLimpiar.style.display = 'none';
+        window.location.href = '/docente';
+    }
+
+    buscadorInput.addEventListener('keyup', function () {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(buscarSugerencias, 300);
+    });
+
+    buscadorInput.addEventListener('focus', function () {
+        if (buscadorInput.value.trim().length >= 2) {
+            buscarSugerencias();
+        }
+    });
+
+    btnLimpiar.addEventListener('click', limpiarBusqueda);
+
+    btnBuscar.addEventListener('click', function () {
+        const query = buscadorInput.value.trim();
+        if (query) {
+            window.location.href = `/docente/buscar?q=${encodeURIComponent(query)}`;
+        }
+    });
+
+    buscadorInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = buscadorInput.value.trim();
+            if (query) {
+                window.location.href = `/docente/buscar?q=${encodeURIComponent(query)}`;
+            }
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!buscadorInput.contains(e.target) && !sugerenciasLista.contains(e.target)) {
+            sugerenciasLista.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}
