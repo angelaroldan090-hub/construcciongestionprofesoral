@@ -325,6 +325,22 @@
             background: #2980b9;
         }
         
+        /* Estilos para modales con fondo */
+        .modal-backdrop {
+            z-index: 1040;
+        }
+        
+        /* Tablas responsivas */
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        /* Secciones dentro del modal */
+        hr {
+            margin: 1.5rem 0;
+            border-top: 2px solid #e9ecef;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .navbar-brand {
@@ -349,10 +365,14 @@
                 width: 100%;
                 margin-top: 0.5rem;
             }
+            
+            .modal-body {
+                padding: 1rem;
+            }
         }
     </style>
     
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}{% endblock extra_css %}
 </head>
 <body>
     <!-- Navbar principal -->
@@ -382,12 +402,6 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item {% if request.endpoint and 'red' in request.endpoint %}active{% endif %}" 
-                                   href="{{ url_for('red.index') }}">
-                                    <i class="fas fa-network-wired"></i> Redes
-                                </a>
-                            </li>
-                            <li>
                                 <a class="dropdown-item {% if request.endpoint and 'aliado' in request.endpoint %}active{% endif %}" 
                                    href="{{ url_for('aliado.index') }}">
                                     <i class="fas fa-handshake"></i> Aliados
@@ -399,42 +413,22 @@
                                     <i class="fas fa-chalkboard-user"></i> Docentes
                                 </a>
                             </li>
-                        </ul>
-                    </li>
 
-                    <!-- Tablas Intermedias Dropdown -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="intermediasDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-link"></i> Relaciones N:N
-                        </a>
-                        <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item {% if request.endpoint and 'estudio_ac' in request.endpoint %}active{% endif %}" 
-                                   href="{{ url_for('estudio_ac.index') }}">
-                                    <i class="fas fa-graduation-cap"></i> Estudio - Área Conoc.
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {% if request.endpoint and 'red_docente' in request.endpoint %}active{% endif %}" 
-                                   href="{{ url_for('red_docente.index') }}">
-                                    <i class="fas fa-users"></i> Red - Docente
+                                <a class="dropdown-item {% if request.endpoint and 'red' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('red.index') }}">
+                                    <i class="fas fa-network-wired"></i> Redes
                                 </a>
                             </li>
                         </ul>
                     </li>
 
-                    <!-- Tablas Dependientes Dropdown -->
+                    <!-- Otras Entidades Dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="dependientesDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-sitemap"></i> Tablas Dependientes
+                        <a class="nav-link dropdown-toggle" href="#" id="otrasDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-database"></i> Otras Entidades
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {% if request.endpoint and 'alianza' in request.endpoint %}active{% endif %}" 
-                                   href="{{ url_for('alianza.index') }}">
-                                    <i class="fas fa-handshake"></i> Alianzas
-                                </a>
-                            </li>
                             <li>
                                 <a class="dropdown-item {% if request.endpoint and 'apoyo_profesoral' in request.endpoint %}active{% endif %}" 
                                    href="{{ url_for('apoyo_profesoral.index') }}">
@@ -448,17 +442,12 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item {% if request.endpoint and 'docente_departamento' in request.endpoint %}active{% endif %}" 
-                                   href="{{ url_for('docente_departamento.index') }}">
-                                    <i class="fas fa-building"></i> Docente - Departamento
-                                </a>
-                            </li>
-                            <li>
                                 <a class="dropdown-item {% if request.endpoint and 'evaluacion_docente' in request.endpoint %}active{% endif %}" 
                                    href="{{ url_for('evaluacion_docente.index') }}">
                                     <i class="fas fa-star"></i> Evaluación Docente
                                 </a>
                             </li>
+
                         </ul>
                     </li>
                 </ul>
@@ -469,7 +458,20 @@
     <!-- Contenido principal -->
     <main class="main-content">
         <div class="container-fluid fade-in">
-            {% block content %}{% endblock %}
+            <!-- Mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock content %}
         </div>
     </main>
 
@@ -485,7 +487,7 @@
                 <div class="col-md-6 text-end">
                     <p class="mb-0">
                         <i class="fas fa-database me-1"></i> Versión 2.0.0 | 
-                        <i class="fas fa-chalkboard-user me-1"></i> Todos los módulos
+                        <i class="fas fa-chalkboard-user me-1"></i> Mapa de Conocimiento
                     </p>
                 </div>
             </div>
@@ -503,7 +505,7 @@
             setTimeout(function() {
                 var alerts = document.querySelectorAll('.alert');
                 alerts.forEach(function(alert) {
-                    var bsAlert = new bootstrap.Alert(alert);
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
                     bsAlert.close();
                 });
             }, 5000);
@@ -514,23 +516,31 @@
             
             dropdowns.forEach(function(dropdown) {
                 var parent = dropdown.closest('.nav-item.dropdown');
-                var links = parent.querySelectorAll('.dropdown-item');
-                var isActive = false;
-                
-                links.forEach(function(link) {
-                    if (link.getAttribute('href') === currentPath) {
-                        isActive = true;
+                if (parent) {
+                    var links = parent.querySelectorAll('.dropdown-item');
+                    var isActive = false;
+                    
+                    links.forEach(function(link) {
+                        if (link.getAttribute('href') === currentPath) {
+                            isActive = true;
+                        }
+                    });
+                    
+                    if (isActive) {
+                        dropdown.classList.add('active');
+                        parent.classList.add('active');
                     }
-                });
-                
-                if (isActive) {
-                    dropdown.classList.add('active');
-                    parent.classList.add('active');
                 }
             });
         });
+        
+        // Función global para manejar errores de fetch
+        function handleFetchError(error) {
+            console.error('Error:', error);
+            alert('Ocurrió un error en la comunicación con el servidor');
+        }
     </script>
     
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}{% endblock extra_js %}
 </body>
 </html>

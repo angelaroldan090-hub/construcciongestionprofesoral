@@ -124,3 +124,46 @@ class ApiService:
             return (respuesta.ok, mensaje)
         except requests.RequestException as ex:
             return (False, f"Error de conexion: {ex}")     
+        
+def ejecutar_procedimiento(self, nombre_proc, parametros):
+    """Ejecuta un procedimiento almacenado"""
+    try:
+        # Construir la llamada al procedimiento
+        placeholders = ','.join(['%s'] * len(parametros))
+        query = f"CALL public.{nombre_proc}({placeholders}, NULL)"
+        
+        self.cursor.execute(query, parametros)
+        
+        # Obtener el mensaje OUT
+        mensaje = self.cursor.fetchone()
+        self.conn.commit()
+        return True, mensaje[0] if mensaje else "Ejecutado correctamente"
+    except Exception as e:
+        self.conn.rollback()
+        return False, str(e)
+
+def listar_vinculaciones_docente(self, docente_id):
+    """Lista las vinculaciones de un docente"""
+    try:
+        query = "SELECT * FROM public.select_vinculacion_docente(%s, NULL)"
+        self.cursor.execute(query, (docente_id,))
+        result = self.cursor.fetchone()
+        if result and result[0]:
+            return json.loads(result[0])
+        return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
+
+def listar_alianzas_aliado(self, aliado_id):
+    """Lista las alianzas de un aliado"""
+    try:
+        query = "SELECT * FROM public.select_alianza(%s, NULL)"
+        self.cursor.execute(query, (aliado_id,))
+        result = self.cursor.fetchone()
+        if result and result[0]:
+            return json.loads(result[0])
+        return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []

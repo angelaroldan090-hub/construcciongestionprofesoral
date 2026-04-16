@@ -2,7 +2,7 @@
 docente.py - Blueprint para la tabla Docente.
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from services.api_service import ApiService
 
 bp = Blueprint('docente', __name__)
@@ -23,22 +23,29 @@ def index():
     editando = accion == 'editar'
     
     registro = None
+    vinculaciones = []
+    
     if editando and valor_clave:
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
+        # Obtener vinculaciones departamentales del docente
+        vinculaciones = api.listar_vinculaciones_docente(valor_clave)
     
-    # Obtener listas para selects (líneas de investigación)
+    # Obtener listas para selects
     lineas = api.listar('linea_investigacion')
+    departamentos = api.listar('programa')  # Los departamentos son programas
     
     return render_template('pages/docente.html',
         registros=registros,
         mostrar_formulario=mostrar_formulario,
         editando=editando,
         registro=registro,
+        vinculaciones=vinculaciones,
         limite=limite,
-        lineas=lineas
+        lineas=lineas,
+        departamentos=departamentos
     )
 
 @bp.route('/docente/crear', methods=['POST'])
@@ -97,3 +104,51 @@ def eliminar():
     exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('docente.index'))
+
+# ============== NUEVAS RUTAS PARA VINCULACIONES ==============
+
+@bp.route('/api/docente/<int:docente_id>/vinculaciones', methods=['GET'])
+def obtener_vinculaciones(docente_id):
+    """Obtener todas las vinculaciones de un docente"""
+    exito, resultado = api.ejecutar_procedimiento('select_vinculacion_docente', [docente_id, None])
+    if exito:
+        return jsonify({'success': True, 'data': resultado})
+    return jsonify({'success': False, 'error': resultado})
+
+@bp.route('/api/docente_vinculacion/crear', methods=['POST'])
+def crear_vinculacion():
+    """Crear vinculación docente-departamento"""
+    data = request.json
+    params = [
+        data.get('docente'),
+        data.get('departamento'),
+        data.get('dedicacion'),
+        data.get('modalidad'),
+        data.get('fecha_ingreso'),
+        data.get('fecha_salida')
+    ]
+    exito, mensaje = api.ejecutar_procedimiento('insert_docente_departamento', params)
+    return jsonify({'success': exito, 'message': mensaje})
+
+@bp.route('/api/docente_vinculacion/eliminar', methods=['POST'])
+def eliminar_vinculacion():
+    """Eliminar vinculación docente-departamento"""
+    data = request.json
+    params = [data.get('docente'), data.get('departamento')]
+    exito, mensaje = api.ejecutar_procedimiento('delete_docente_departamento', params)
+    return jsonify({'success': exito, 'message': mensaje})
+
+@bp.route('/api/docente_vinculacion/actualizar', methods=['POST'])
+def actualizar_vinculacion():
+    """Actualizar vinculación docente-departamento"""
+    data = request.json
+    params = [
+        data.get('docente'),
+        data.get('departamento'),
+        data.get('dedicacion'),
+        data.get('modalidad'),
+        data.get('fecha_ingreso'),
+        data.get('fecha_salida')
+    ]
+    exito, mensaje = api.ejecutar_procedimiento('update_docente_departamento', params)
+    return jsonify({'success': exito, 'message': mensaje})

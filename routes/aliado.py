@@ -2,14 +2,14 @@
 aliado.py - Blueprint para la tabla Aliado.
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from services.api_service import ApiService
 
 bp = Blueprint('aliado', __name__)
 api = ApiService()
 
 TABLA = 'aliado'
-CLAVE = 'nit'  # Cambia a 'alc_id' si ese es el nombre en tu API
+CLAVE = 'nit'
 
 @bp.route('/aliado')
 def index():
@@ -23,18 +23,29 @@ def index():
     editando = accion == 'editar'
     
     registro = None
+    alianzas = []
+    
     if editando and valor_clave:
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
+        # Obtener alianzas del aliado
+        alianzas = api.listar_alianzas_aliado(valor_clave)
+    
+    # Obtener listas para selects
+    departamentos = api.listar('programa')
+    docentes = api.listar('docente')
     
     return render_template('pages/aliado.html',
         registros=registros,
         mostrar_formulario=mostrar_formulario,
         editando=editando,
         registro=registro,
-        limite=limite
+        alianzas=alianzas,
+        limite=limite,
+        departamentos=departamentos,
+        docentes=docentes
     )
 
 @bp.route('/aliado/crear', methods=['POST'])
@@ -73,3 +84,49 @@ def eliminar():
     exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('aliado.index'))
+
+# ============== NUEVAS RUTAS PARA ALIANZAS ==============
+
+@bp.route('/api/aliado/<int:aliado_id>/alianzas', methods=['GET'])
+def obtener_alianzas(aliado_id):
+    """Obtener todas las alianzas de un aliado"""
+    exito, resultado = api.ejecutar_procedimiento('select_alianza', [aliado_id, None])
+    if exito:
+        return jsonify({'success': True, 'data': resultado})
+    return jsonify({'success': False, 'error': resultado})
+
+@bp.route('/api/alianza/crear', methods=['POST'])
+def crear_alianza():
+    """Crear alianza entre aliado y departamento"""
+    data = request.json
+    params = [
+        data.get('aliado'),
+        data.get('departamento'),
+        data.get('fecha_inicio'),
+        data.get('fecha_fin'),
+        data.get('docente')
+    ]
+    exito, mensaje = api.ejecutar_procedimiento('insert_alianza', params)
+    return jsonify({'success': exito, 'message': mensaje})
+
+@bp.route('/api/alianza/eliminar', methods=['POST'])
+def eliminar_alianza():
+    """Eliminar alianza"""
+    data = request.json
+    params = [data.get('aliado'), data.get('departamento')]
+    exito, mensaje = api.ejecutar_procedimiento('delete_alianza', params)
+    return jsonify({'success': exito, 'message': mensaje})
+
+@bp.route('/api/alianza/actualizar', methods=['POST'])
+def actualizar_alianza():
+    """Actualizar alianza"""
+    data = request.json
+    params = [
+        data.get('aliado'),
+        data.get('departamento'),
+        data.get('fecha_inicio'),
+        data.get('fecha_fin'),
+        data.get('docente')
+    ]
+    exito, mensaje = api.ejecutar_procedimiento('update_alianza', params)
+    return jsonify({'success': exito, 'message': mensaje})
