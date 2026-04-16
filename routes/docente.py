@@ -19,6 +19,17 @@ def index():
     
     registros = api.listar(TABLA, limite)
     
+    # DEPURACION
+    print("=" * 50)
+    print(f"URL: {request.url}")
+    print(f"Tabla: {TABLA}")
+    print(f"Registros recibidos: {len(registros)}")
+    if registros:
+        print(f"Primer registro: {registros[0]}")
+    else:
+        print("No hay registros")
+    print("=" * 50)
+    
     mostrar_formulario = accion in ('nuevo', 'editar')
     editando = accion == 'editar'
     
@@ -34,7 +45,7 @@ def index():
     
     # Obtener listas para selects
     lineas = api.listar('linea_investigacion')
-    departamentos = api.listar('programa')  # Los departamentos son programas
+    departamentos = api.listar('programa')
     
     return render_template('pages/docente.html',
         registros=registros,
@@ -104,17 +115,13 @@ def eliminar():
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('docente.index'))
 
-# ============== NUEVAS RUTAS PARA VINCULACIONES ==============
-
 @bp.route('/api/docente/<int:docente_id>/vinculaciones', methods=['GET'])
 def obtener_vinculaciones(docente_id):
-    """Obtener todas las vinculaciones de un docente"""
     registros = api.listar_vinculaciones_docente(docente_id)
     return jsonify({'success': True, 'data': registros})
 
 @bp.route('/api/docente_vinculacion/crear', methods=['POST'])
 def crear_vinculacion():
-    """Crear vinculación docente-departamento"""
     data = request.json
     datos = {
         'docente': data.get('docente'),
@@ -129,14 +136,12 @@ def crear_vinculacion():
 
 @bp.route('/api/docente_vinculacion/eliminar', methods=['POST'])
 def eliminar_vinculacion():
-    """Eliminar vinculación docente-departamento"""
     data = request.json
     exito, mensaje = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')])
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/docente_vinculacion/actualizar', methods=['POST'])
 def actualizar_vinculacion():
-    """Actualizar vinculación docente-departamento"""
     data = request.json
     datos = {
         'docente': data.get('docente'),
