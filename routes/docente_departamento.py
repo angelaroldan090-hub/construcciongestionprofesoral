@@ -18,7 +18,7 @@ def index():
     
     # Obtener datos para selects
     docentes = api.listar('docente')
-    departamentos = api.listar('departamento')
+    programas = api.listar('programa')
     
     # Manejo de formulario modal
     accion = request.args.get('accion')
@@ -50,7 +50,7 @@ def index():
         registro=registro,
         limite=limite,
         docentes=docentes,
-        departamentos=departamentos
+        programas=programas
     )
 
 @bp.route('/docente_departamento/crear', methods=['POST'])
