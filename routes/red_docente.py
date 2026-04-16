@@ -76,13 +76,35 @@ def actualizar():
     except (ValueError, TypeError):
         flash('ID de red o docente inválido.', 'danger')
         return redirect(url_for('red_docente.index'))
+    
     datos = {
         'fecha_inicio': request.form.get('fecha_inicio', ''),
         'fecha_fin': request.form.get('fecha_fin', '') or None,
         'act_destacadas': request.form.get('act_destacadas', '')
     }
-    exito, mensaje = api.actualizar_compuesta(TABLA, ['red', 'docente'], [red_id, docente_id], datos)
-    flash(mensaje, 'success' if exito else 'danger')
+    
+    # Para claves compuestas, simular actualización con DELETE + CREATE
+    # Paso 1: Eliminar el registro actual
+    exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['red', 'docente'], [red_id, docente_id])
+    
+    if exito_eliminar:
+        # Paso 2: Crear el registro con los datos nuevos
+        datos_crear = {
+            'red': red_id,
+            'docente': docente_id,
+            'fecha_inicio': datos['fecha_inicio'],
+            'fecha_fin': datos['fecha_fin'],
+            'act_destacadas': datos['act_destacadas']
+        }
+        exito_crear, mensaje_crear = api.crear(TABLA, datos_crear)
+        
+        if exito_crear:
+            flash('Registro actualizado exitosamente.', 'success')
+        else:
+            flash(f'Error al recrear registro: {mensaje_crear}', 'danger')
+    else:
+        flash(f'Error al actualizar: {mensaje_eliminar}', 'danger')
+    
     return redirect(url_for('red_docente.index'))
 
 @bp.route('/red_docente/eliminar', methods=['POST'])
