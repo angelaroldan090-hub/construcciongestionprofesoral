@@ -1,10 +1,10 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Gestión de Redes Académicas{% endblock %}
+{% block title %}Gestion de Redes Academicas{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* CSS específico para la página de redes */
+    /* CSS especifico para la pagina de redes */
     .red-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -12,7 +12,7 @@
         border-radius: 15px;
         margin-bottom: 2rem;
     }
-    
+
     .red-icon {
         font-size: 3rem;
         opacity: 0.3;
@@ -20,19 +20,19 @@
         right: 1rem;
         top: 1rem;
     }
-    
+
     .url-link {
         color: var(--accent-color);
         text-decoration: none;
         font-weight: 500;
         transition: color 0.3s;
     }
-    
+
     .url-link:hover {
         color: #2980b9;
         text-decoration: underline;
     }
-    
+
     .pais-badge {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -41,12 +41,33 @@
         font-size: 0.8rem;
         display: inline-block;
     }
-    
+
+    .sugerencias-dropdown {
+        position: absolute;
+        width: 100%;
+        z-index: 1000;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sugerencia-item {
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .sugerencia-item:hover {
+        background-color: #f8f9fa;
+    }
+
     @media (max-width: 768px) {
         .red-card {
             padding: 1rem;
         }
-        
+
         .red-icon {
             font-size: 2rem;
         }
@@ -59,53 +80,77 @@
     <!-- Encabezado con estilo -->
     <div class="red-card position-relative fade-in">
         <h1 class="h3 mb-2">
-            <i class="fas fa-network-wired me-2"></i>Gestión de Redes Académicas
+            <i class="fas fa-network-wired me-2"></i>Gestion de Redes Academicas
         </h1>
-        <p class="mb-0 opacity-75">Administra las redes académicas y científicas</p>
+        <p class="mb-0 opacity-75">Administra las redes academicas y cientificas</p>
         <i class="fas fa-network-wired red-icon"></i>
     </div>
 
     <!-- Mensajes Flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 
-    <!-- Filtro de límite -->
+    <!-- Filtro de limite y busqueda -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ url_for('red.index') }}" class="row g-3 align-items-center">
+            <div class="row g-3 align-items-center">
                 <div class="col-auto">
                     <label for="limite" class="form-label mb-0">
                         <i class="fas fa-filter me-1"></i>Mostrar:
                     </label>
                 </div>
                 <div class="col-auto">
-                    <select name="limite" id="limite" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option value="10" {% if limite == 10 %}selected{% endif %}>10 registros</option>
-                        <option value="25" {% if limite == 25 %}selected{% endif %}>25 registros</option>
-                        <option value="50" {% if limite == 50 %}selected{% endif %}>50 registros</option>
-                        <option value="100" {% if limite == 100 %}selected{% endif %}>100 registros</option>
+                    <select name="limite" id="limite" class="form-select form-select-sm" style="width: auto;"
+                        onchange="location.href='/red?limite=' + this.value">
+                        <option value="10" {% if limite==10 %}selected{% endif %}>10 registros</option>
+                        <option value="25" {% if limite==25 %}selected{% endif %}>25 registros</option>
+                        <option value="50" {% if limite==50 %}selected{% endif %}>50 registros</option>
+                        <option value="100" {% if limite==100 %}selected{% endif %}>100 registros</option>
                         <option value="" {% if not limite %}selected{% endif %}>Todos</option>
                     </select>
                 </div>
-                <div class="col-auto ms-auto">
+                <div class="col">
+                    <div class="position-relative">
+                        <div class="input-group">
+                            <input type="text" id="buscadorRed" class="form-control"
+                                placeholder="Buscar por nombre o pais..." autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" type="button" id="btnLimpiar" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="sugerenciasLista" class="sugerencias-dropdown" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="col-auto">
                     <span class="badge bg-primary">
                         <i class="fas fa-database me-1"></i>Total: {{ registros|length }} redes
                     </span>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Botón de nueva red -->
+    {% if busqueda %}
+    <div class="alert alert-info alert-dismissible fade show mb-3">
+        <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{ registros|length }}
+        red(es)
+        <a href="{{ url_for('red.index') }}" class="float-end text-decoration-none">Limpiar busqueda</a>
+    </div>
+    {% endif %}
+
+    <!-- Boton de nueva red -->
     <div class="mb-4 text-end">
         <a href="{{ url_for('red.index', accion='nuevo', limite=limite) }}" class="btn btn-primary">
             <i class="fas fa-plus-circle me-2"></i>Nueva Red
@@ -115,48 +160,53 @@
     <!-- Tabla de redes -->
     <div class="card shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
+            <table class="table table-hover table-striped mb-0" id="tablaRedes">
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>URL</th>
-                        <th>País</th>
+                        <th>Pais</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for red in registros %}
                     <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
-                        <td><span class="badge bg-secondary">{{ red[clave_real] }}</span></td>
-                        <td class="fw-bold">{{ red.nombre }}</td>
+                        <td><span class="badge bg-secondary">{{ red[clave_real] if clave_real else red.id or red.idr
+                                }}</span></td>
+                        <td class="fw-bold">
+                            <i class="fas fa-network-wired me-1 text-primary"></i>
+                            {{ red.nombre }}
+                        </td>
                         <td>
                             {% if red.url %}
-                                <a href="{{ red.url }}" target="_blank" class="url-link">
-                                    <i class="fas fa-external-link-alt me-1"></i>{{ red.url|truncate(30) }}
-                                </a>
+                            <a href="{{ red.url }}" target="_blank" class="url-link">
+                                <i class="fas fa-external-link-alt me-1"></i>{{ red.url|truncate(30) }}
+                            </a>
                             {% else %}
-                                <span class="text-muted">-</span>
+                            <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if red.pais %}
-                                <span class="pais-badge">
-                                    <i class="fas fa-globe-americas me-1"></i>{{ red.pais }}
-                                </span>
+                            <span class="pais-badge">
+                                <i class="fas fa-globe-americas me-1"></i>{{ red.pais }}
+                            </span>
                             {% else %}
-                                <span class="text-muted">-</span>
+                            <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <a href="{{ url_for('red.index', accion='editar', clave=red[clave_real], limite=limite) }}" 
-                               class="btn btn-sm btn-outline-primary me-1">
+                            <a href="{{ url_for('red.index', accion='editar', clave=red[clave_real] if clave_real else red.id or red.idr, limite=limite) }}"
+                                class="btn btn-sm btn-outline-primary me-1">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
                             <form method="POST" action="{{ url_for('red.eliminar') }}" style="display: inline;">
-                                <input type="hidden" name="idr" value="{{ red[clave_real] }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                        onclick="return confirm('¿Está seguro de eliminar esta red?')">
+                                <input type="hidden" name="idr"
+                                    value="{{ red[clave_real] if clave_real else red.id or red.idr }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('¿Esta seguro de eliminar esta red?')">
                                     <i class="fas fa-trash-alt"></i> Eliminar
                                 </button>
                             </form>
@@ -166,7 +216,7 @@
                     <tr>
                         <td colspan="5" class="text-center py-5">
                             <i class="fas fa-network-wired fa-3x text-muted mb-3"></i>
-                            <p class="text-muted mb-0">No hay redes académicas registradas</p>
+                            <p class="text-muted mb-0">No hay redes academicas registradas</p>
                             <a href="{{ url_for('red.index', accion='nuevo') }}" class="btn btn-primary btn-sm mt-3">
                                 <i class="fas fa-plus-circle me-1"></i>Crear primera red
                             </a>
@@ -180,15 +230,16 @@
 
     <!-- Formulario Modal para Crear/Editar -->
     {% if mostrar_formulario %}
-    <div class="modal fade show" id="formModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" data-bs-backdrop="static">
+    <div class="modal fade show" id="formModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);"
+        data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
                         {% if editando %}
-                            <i class="fas fa-edit me-2"></i>Editar Red
+                        <i class="fas fa-edit me-2"></i>Editar Red
                         {% else %}
-                            <i class="fas fa-plus-circle me-2"></i>Nueva Red
+                        <i class="fas fa-plus-circle me-2"></i>Nueva Red
                         {% endif %}
                     </h5>
                     <a href="{{ url_for('red.index', limite=limite) }}" class="btn-close btn-close-white"></a>
@@ -196,35 +247,34 @@
                 <form method="POST" action="{{ url_for('red.actualizar' if editando else 'red.crear') }}">
                     <div class="modal-body">
                         {% if editando %}
-                            <input type="hidden" name="idr" value="{{ registro[clave_real] }}">
+                        <input type="hidden" name="idr"
+                            value="{{ registro[clave_real] if clave_real else registro.id or registro.idr }}">
                         {% endif %}
-                        
+
                         <div class="row g-4">
                             <div class="col-md-6">
                                 <label for="nombre" class="form-label">
                                     <i class="fas fa-tag me-1"></i>Nombre <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="nombre" name="nombre" 
-                                       value="{{ registro.nombre if editando else '' }}" 
-                                       placeholder="Ej: Red de Investigación" required>
+                                <input type="text" class="form-control" id="nombre" name="nombre"
+                                    value="{{ registro.nombre if editando else '' }}"
+                                    placeholder="Ej: Red de Investigacion" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="pais" class="form-label">
-                                    <i class="fas fa-globe me-1"></i>País
+                                    <i class="fas fa-globe me-1"></i>Pais
                                 </label>
-                                <input type="text" class="form-control" id="pais" name="pais" 
-                                       value="{{ registro.pais if editando else '' }}"
-                                       placeholder="Ej: Colombia">
+                                <input type="text" class="form-control" id="pais" name="pais"
+                                    value="{{ registro.pais if editando else '' }}" placeholder="Ej: Colombia">
                             </div>
                         </div>
-                        
+
                         <div class="mt-4">
                             <label for="url" class="form-label">
                                 <i class="fas fa-link me-1"></i>URL
                             </label>
-                            <input type="url" class="form-control" id="url" name="url" 
-                                   value="{{ registro.url if editando else '' }}"
-                                   placeholder="https://ejemplo.com">
+                            <input type="url" class="form-control" id="url" name="url"
+                                value="{{ registro.url if editando else '' }}" placeholder="https://ejemplo.com">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -233,9 +283,9 @@
                         </a>
                         <button type="submit" class="btn btn-primary">
                             {% if editando %}
-                                <i class="fas fa-save me-1"></i> Actualizar
+                            <i class="fas fa-save me-1"></i> Actualizar
                             {% else %}
-                                <i class="fas fa-plus-circle me-1"></i> Crear
+                            <i class="fas fa-plus-circle me-1"></i> Crear
                             {% endif %}
                         </button>
                     </div>
@@ -245,15 +295,116 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+    // Buscador desplegable
+    const buscadorInput = document.getElementById('buscadorRed');
+    const sugerenciasLista = document.getElementById('sugerenciasLista');
+    const btnLimpiar = document.getElementById('btnLimpiar');
+    const btnBuscar = document.getElementById('btnBuscar');
+    let timeoutId = null;
+
+    function buscarSugerencias() {
+        const query = buscadorInput.value.trim();
+
+        if (query.length < 2) {
+            sugerenciasLista.style.display = 'none';
+            btnLimpiar.style.display = 'none';
+            return;
+        }
+
+        btnLimpiar.style.display = 'block';
+
+        fetch(`/red/sugerencias?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    sugerenciasLista.innerHTML = '';
+                    data.forEach(red => {
+                        const item = document.createElement('div');
+                        item.className = 'list-group-item list-group-item-action sugerencia-item';
+                        item.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${red.nombre}</strong>
+                            </div>
+                            <small class="text-muted">${red.pais || 'Sin pais'}</small>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            <i class="fas fa-link me-1"></i>${red.url ? red.url.substring(0, 50) : 'Sin URL'}
+                        </div>
+                    `;
+                        item.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.location.href = `/red?accion=editar&clave=${red.id}`;
+                        });
+                        sugerenciasLista.appendChild(item);
+                    });
+                    sugerenciasLista.style.display = 'block';
+                } else {
+                    sugerenciasLista.innerHTML = '<div class="list-group-item text-muted">No se encontraron redes</div>';
+                    sugerenciasLista.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                sugerenciasLista.style.display = 'none';
+            });
+    }
+
+    function limpiarBusqueda() {
+        buscadorInput.value = '';
+        sugerenciasLista.style.display = 'none';
+        btnLimpiar.style.display = 'none';
+        window.location.href = '/red';
+    }
+
+    buscadorInput.addEventListener('keyup', function () {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(buscarSugerencias, 300);
+    });
+
+    buscadorInput.addEventListener('focus', function () {
+        if (buscadorInput.value.trim().length >= 2) {
+            buscarSugerencias();
+        }
+    });
+
+    btnLimpiar.addEventListener('click', limpiarBusqueda);
+
+    btnBuscar.addEventListener('click', function () {
+        const query = buscadorInput.value.trim();
+        if (query) {
+            window.location.href = `/red/buscar?q=${encodeURIComponent(query)}`;
+        }
+    });
+
+    buscadorInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = buscadorInput.value.trim();
+            if (query) {
+                window.location.href = `/red/buscar?q=${encodeURIComponent(query)}`;
+            }
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!buscadorInput.contains(e.target) && !sugerenciasLista.contains(e.target)) {
+            sugerenciasLista.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Script adicional para la página de redes
-    document.addEventListener('DOMContentLoaded', function() {
-        // Enfocar el primer campo del formulario si está abierto
+    // Script adicional para la pagina de redes
+    document.addEventListener('DOMContentLoaded', function () {
+        // Enfocar el primer campo del formulario si esta abierto
         if (document.getElementById('formModal')) {
-            document.getElementById('nombre').focus();
+            const nombreField = document.getElementById('nombre');
+            if (nombreField) nombreField.focus();
         }
     });
 </script>
