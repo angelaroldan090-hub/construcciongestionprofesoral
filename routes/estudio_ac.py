@@ -55,9 +55,20 @@ def index():
 
 @bp.route('/estudio_ac/crear', methods=['POST'])
 def crear():
+    estudio = request.form.get('estudio', '')
+    area_conocimiento = request.form.get('area_conocimiento', '')
+    
+    # Validar y convertir IDs a int
+    try:
+        estudio_id = int(estudio)
+        area_id = int(area_conocimiento)
+    except (ValueError, TypeError):
+        flash('IDs inválidos.', 'danger')
+        return redirect(url_for('estudio_ac.index'))
+    
     datos = {
-        'estudio': request.form.get('estudio', ''),
-        'area_conocimiento': request.form.get('area_conocimiento', '')
+        'estudio': estudio_id,
+        'area_conocimiento': area_id
     }
     
     exito, mensaje = api.crear(TABLA, datos)
@@ -69,13 +80,21 @@ def actualizar():
     estudio = request.form.get('estudio', '')
     area_conocimiento = request.form.get('area_conocimiento', '')
     
+    # Validar y convertir IDs
+    try:
+        estudio_id = int(estudio)
+        area_id = int(area_conocimiento)
+    except (ValueError, TypeError):
+        flash('IDs inválidos.', 'danger')
+        return redirect(url_for('estudio_ac.index'))
+    
     # Para claves compuestas, usar DELETE + CREATE
-    exito_eliminar, _ = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio, area_conocimiento])
+    exito_eliminar, _ = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio_id, area_id])
     
     if exito_eliminar:
         datos = {
-            'estudio': estudio,
-            'area_conocimiento': area_conocimiento
+            'estudio': estudio_id,
+            'area_conocimiento': area_id
         }
         exito_crear, mensaje = api.crear(TABLA, datos)
         flash('Registro actualizado exitosamente.' if exito_crear else f'Error: {mensaje}',
@@ -90,6 +109,14 @@ def eliminar():
     estudio = request.form.get('estudio', '')
     area_conocimiento = request.form.get('area_conocimiento', '')
     
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio, area_conocimiento])
+    # Validar y convertir IDs
+    try:
+        estudio_id = int(estudio)
+        area_id = int(area_conocimiento)
+    except (ValueError, TypeError):
+        flash('IDs inválidos.', 'danger')
+        return redirect(url_for('estudio_ac.index'))
+    
+    exito, mensaje = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio_id, area_id])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('estudio_ac.index'))

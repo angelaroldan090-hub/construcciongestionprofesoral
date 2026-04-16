@@ -55,9 +55,20 @@ def index():
 
 @bp.route('/red_docente/crear', methods=['POST'])
 def crear():
+    red = request.form.get('red', '')
+    docente = request.form.get('docente', '')
+    
+    # Validar y convertir IDs a int
+    try:
+        red_id = int(red)
+        docente_id = int(docente)
+    except (ValueError, TypeError):
+        flash('ID de red o docente inválido.', 'danger')
+        return redirect(url_for('red_docente.index'))
+    
     datos = {
-        'red': request.form.get('red', ''),
-        'docente': request.form.get('docente', ''),
+        'red': red_id,
+        'docente': docente_id,
         'fecha_inicio': request.form.get('fecha_inicio', ''),
         'fecha_fin': request.form.get('fecha_fin', '') or None,
         'act_destacadas': request.form.get('act_destacadas', '')

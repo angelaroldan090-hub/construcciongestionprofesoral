@@ -47,9 +47,20 @@ def index():
 
 @bp.route('/alianza/crear', methods=['POST'])
 def crear():
+    aliado = request.form.get('aliado', '')
+    departamento = request.form.get('departamento', '')
+    
+    # Validar y convertir IDs a int
+    try:
+        aliado_id = int(aliado)
+        departamento_id = int(departamento)
+    except (ValueError, TypeError):
+        flash('ID de aliado o departamento inválido.', 'danger')
+        return redirect(url_for('alianza.index'))
+    
     datos = {
-        'aliado': request.form.get('aliado', ''),
-        'departamento': request.form.get('departamento', ''),
+        'aliado': aliado_id,
+        'departamento': departamento_id,
         'fecha_inicio': request.form.get('fecha_inicio', ''),
         'fecha_fin': request.form.get('fecha_fin', '') or None,
         'docente': request.form.get('docente', '') or None
@@ -79,14 +90,17 @@ def actualizar():
         'docente': request.form.get('docente', '') or None
     }
 
-    exito_eliminar, _ = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
+    # Para claves compuestas, usar DELETE + CREATE
+    exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
 
     if exito_eliminar:
-        exito_crear, mensaje = api.crear(TABLA, datos)
-        flash('Alianza actualizada exitosamente.' if exito_crear else f'Error al recrear: {mensaje}',
-              'success' if exito_crear else 'danger')
+        exito_crear, mensaje_crear = api.crear(TABLA, datos)
+        if exito_crear:
+            flash('Alianza actualizada exitosamente.', 'success')
+        else:
+            flash(f'Error al recrear: {mensaje_crear}', 'danger')
     else:
-        flash('Error al actualizar la alianza.', 'danger')
+        flash(f'Error al actualizar: {mensaje_eliminar}', 'danger')
 
     return redirect(url_for('alianza.index'))
 
@@ -95,6 +109,13 @@ def eliminar():
     aliado = request.form.get('aliado', '')
     departamento = request.form.get('departamento', '')
     
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado, departamento])
+    try:
+        aliado_id = int(aliado)
+        departamento_id = int(departamento)
+    except (ValueError, TypeError):
+        flash('ID de aliado o departamento inválido.', 'danger')
+        return redirect(url_for('alianza.index'))
+    
+    exito, mensaje = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('alianza.index'))
