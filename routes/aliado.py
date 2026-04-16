@@ -23,12 +23,18 @@ def index():
     editando = accion == 'editar'
     
     registro = None
+    alianzas = []
     
     if editando and valor_clave:
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
+        try:
+            aliado_id = int(valor_clave)
+        except (ValueError, TypeError):
+            aliado_id = valor_clave
+        alianzas = api.listar_alianzas_aliado(aliado_id)
     
     # Obtener listas para selects
     departamentos = api.listar('programa')
@@ -39,6 +45,7 @@ def index():
         mostrar_formulario=mostrar_formulario,
         editando=editando,
         registro=registro,
+        alianzas=alianzas,
         limite=limite,
         departamentos=departamentos,
         docentes=docentes
@@ -86,43 +93,40 @@ def eliminar():
 @bp.route('/api/aliado/<int:aliado_id>/alianzas', methods=['GET'])
 def obtener_alianzas(aliado_id):
     """Obtener todas las alianzas de un aliado"""
-    exito, resultado = api.ejecutar_procedimiento('select_alianza', [aliado_id, None])
-    if exito:
-        return jsonify({'success': True, 'data': resultado})
-    return jsonify({'success': False, 'error': resultado})
+    registros = api.listar_alianzas_aliado(aliado_id)
+    return jsonify({'success': True, 'data': registros})
 
 @bp.route('/api/alianza/crear', methods=['POST'])
 def crear_alianza():
     """Crear alianza entre aliado y departamento"""
     data = request.json
-    params = [
-        data.get('aliado'),
-        data.get('departamento'),
-        data.get('fecha_inicio'),
-        data.get('fecha_fin'),
-        data.get('docente')
-    ]
-    exito, mensaje = api.ejecutar_procedimiento('insert_alianza', params)
+    datos = {
+        'aliado': data.get('aliado'),
+        'departamento': data.get('departamento'),
+        'fecha_inicio': data.get('fecha_inicio'),
+        'fecha_fin': data.get('fecha_fin'),
+        'docente': data.get('docente')
+    }
+    exito, mensaje = api.crear('alianza', datos)
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/alianza/eliminar', methods=['POST'])
 def eliminar_alianza():
     """Eliminar alianza"""
     data = request.json
-    params = [data.get('aliado'), data.get('departamento')]
-    exito, mensaje = api.ejecutar_procedimiento('delete_alianza', params)
+    exito, mensaje = api.eliminar_compuesta('alianza', ['aliado', 'departamento'], [data.get('aliado'), data.get('departamento')])
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/alianza/actualizar', methods=['POST'])
 def actualizar_alianza():
     """Actualizar alianza"""
     data = request.json
-    params = [
-        data.get('aliado'),
-        data.get('departamento'),
-        data.get('fecha_inicio'),
-        data.get('fecha_fin'),
-        data.get('docente')
-    ]
-    exito, mensaje = api.ejecutar_procedimiento('update_alianza', params)
+    datos = {
+        'aliado': data.get('aliado'),
+        'departamento': data.get('departamento'),
+        'fecha_inicio': data.get('fecha_inicio'),
+        'fecha_fin': data.get('fecha_fin'),
+        'docente': data.get('docente')
+    }
+    exito, mensaje = api.actualizar_compuesta('alianza', ['aliado', 'departamento'], [data.get('aliado'), data.get('departamento')], datos)
     return jsonify({'success': exito, 'message': mensaje})

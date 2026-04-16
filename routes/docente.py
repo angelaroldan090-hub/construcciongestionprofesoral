@@ -106,45 +106,42 @@ def eliminar():
 @bp.route('/api/docente/<int:docente_id>/vinculaciones', methods=['GET'])
 def obtener_vinculaciones(docente_id):
     """Obtener todas las vinculaciones de un docente"""
-    exito, resultado = api.ejecutar_procedimiento('select_vinculacion_docente', [docente_id, None])
-    if exito:
-        return jsonify({'success': True, 'data': resultado})
-    return jsonify({'success': False, 'error': resultado})
+    registros = api.listar_vinculaciones_docente(docente_id)
+    return jsonify({'success': True, 'data': registros})
 
 @bp.route('/api/docente_vinculacion/crear', methods=['POST'])
 def crear_vinculacion():
     """Crear vinculación docente-departamento"""
     data = request.json
-    params = [
-        data.get('docente'),
-        data.get('departamento'),
-        data.get('dedicacion'),
-        data.get('modalidad'),
-        data.get('fecha_ingreso'),
-        data.get('fecha_salida')
-    ]
-    exito, mensaje = api.ejecutar_procedimiento('insert_docente_departamento', params)
+    datos = {
+        'docente': data.get('docente'),
+        'departamento': data.get('departamento'),
+        'dedicacion': data.get('dedicacion'),
+        'modalidad': data.get('modalidad'),
+        'fecha_ingreso': data.get('fecha_ingreso'),
+        'fecha_salida': data.get('fecha_salida')
+    }
+    exito, mensaje = api.crear('docente_departamento', datos)
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/docente_vinculacion/eliminar', methods=['POST'])
 def eliminar_vinculacion():
     """Eliminar vinculación docente-departamento"""
     data = request.json
-    params = [data.get('docente'), data.get('departamento')]
-    exito, mensaje = api.ejecutar_procedimiento('delete_docente_departamento', params)
+    exito, mensaje = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')])
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/docente_vinculacion/actualizar', methods=['POST'])
 def actualizar_vinculacion():
     """Actualizar vinculación docente-departamento"""
     data = request.json
-    params = [
-        data.get('docente'),
-        data.get('departamento'),
-        data.get('dedicacion'),
-        data.get('modalidad'),
-        data.get('fecha_ingreso'),
-        data.get('fecha_salida')
-    ]
-    exito, mensaje = api.ejecutar_procedimiento('update_docente_departamento', params)
+    datos = {
+        'docente': data.get('docente'),
+        'departamento': data.get('departamento'),
+        'dedicacion': data.get('dedicacion'),
+        'modalidad': data.get('modalidad'),
+        'fecha_ingreso': data.get('fecha_ingreso'),
+        'fecha_salida': data.get('fecha_salida')
+    }
+    exito, mensaje = api.actualizar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')], datos)
     return jsonify({'success': exito, 'message': mensaje})
