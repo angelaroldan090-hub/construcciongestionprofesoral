@@ -2,7 +2,7 @@
 alianza.py - Blueprint para la tabla Alianza (depende de aliado, docente)
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from services.api_service import ApiService
 
 bp = Blueprint('alianza', __name__)
@@ -44,6 +44,110 @@ def index():
         docentes=docentes,
         departamentos=departamentos
     )
+
+@bp.route('/alianza/buscar')
+def buscar():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', type=int)
+    
+    registros = api.listar(TABLA, limite)
+    
+    if query:
+        query_lower = query.lower()
+        # Obtener datos relacionados para busqueda
+        aliados = api.listar('aliado')
+        departamentos = api.listar('programa')
+        docentes = api.listar('docente')
+        
+        # Crear diccionarios para busqueda rapida
+        aliados_dict = {str(a.get('nit')): a.get('razon_social', '') for a in aliados}
+        deptos_dict = {str(d.get('id')): d.get('nombre', '') for d in departamentos}
+        docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+        
+        resultados = []
+        for r in registros:
+            aliado_str = str(r.get('aliado', ''))
+            depto_str = str(r.get('departamento', ''))
+            docente_str = str(r.get('docente', ''))
+            
+            aliado_nombre = aliados_dict.get(aliado_str, '')
+            depto_nombre = deptos_dict.get(depto_str, '')
+            docente_nombre = docentes_dict.get(docente_str, '')
+            
+            if (query_lower in aliado_str or
+                query_lower in aliado_nombre.lower() or
+                query_lower in depto_str or
+                query_lower in depto_nombre.lower() or
+                query_lower in docente_nombre.lower() or
+                query_lower in str(r.get('fecha_inicio', '')).lower() or
+                (r.get('fecha_fin') and query_lower in r.get('fecha_fin', '').lower())):
+                resultados.append(r)
+        registros = resultados
+    
+    # Obtener datos para selects
+    aliados = api.listar('aliado')
+    docentes = api.listar('docente')
+    departamentos = api.listar('programa')
+    
+    return render_template('pages/alianza.html',
+        registros=registros,
+        mostrar_formulario=False,
+        editando=False,
+        registro=None,
+        limite=limite,
+        aliados=aliados,
+        docentes=docentes,
+        departamentos=departamentos,
+        busqueda=query
+    )
+
+@bp.route('/alianza/sugerencias')
+def sugerencias():
+    query = request.args.get('q', '')
+    limite = request.args.get('limite', 10)
+    
+    registros = api.listar(TABLA)
+    
+    if query:
+        query_lower = query.lower()
+        # Obtener datos relacionados
+        aliados = api.listar('aliado')
+        departamentos = api.listar('programa')
+        docentes = api.listar('docente')
+        
+        aliados_dict = {str(a.get('nit')): a.get('razon_social', '') for a in aliados}
+        deptos_dict = {str(d.get('id')): d.get('nombre', '') for d in departamentos}
+        docentes_dict = {str(d.get('cedula')): f"{d.get('nombres', '')} {d.get('apellidos', '')}" for d in docentes}
+        
+        resultados = []
+        for r in registros:
+            aliado_str = str(r.get('aliado', ''))
+            depto_str = str(r.get('departamento', ''))
+            
+            aliado_nombre = aliados_dict.get(aliado_str, '')
+            depto_nombre = deptos_dict.get(depto_str, '')
+            
+            if (query_lower in aliado_str or
+                query_lower in aliado_nombre.lower() or
+                query_lower in depto_str or
+                query_lower in depto_nombre.lower()):
+                
+                docente_id = str(r.get('docente', ''))
+                docente_nombre = docentes_dict.get(docente_id, 'Sin docente')
+                
+                resultados.append({
+                    'aliado': r.get('aliado'),
+                    'aliado_nombre': aliado_nombre,
+                    'departamento': r.get('departamento'),
+                    'departamento_nombre': depto_nombre,
+                    'docente_nombre': docente_nombre,
+                    'fecha_inicio': r.get('fecha_inicio'),
+                    'texto': f"{aliado_nombre} - {depto_nombre}"
+                })
+        
+        return jsonify(resultados[:limite])
+    
+    return jsonify([])
 
 @bp.route('/alianza/crear', methods=['POST'])
 def crear():
