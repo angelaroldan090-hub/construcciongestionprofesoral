@@ -93,9 +93,9 @@
                     <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
                         <td class="fw-bold">
                             <i class="fas fa-graduation-cap me-1 text-success"></i>
-                            {{ beca.estudio_titulo or beca.estudio }}
+                            {{ beca.estudio_titulo or beca.estudios or beca.estudio }}
                         </td>
-                        <td>{{ beca.universidad or '-' }}</td>
+                        <td>{{ beca.estudio_universidad or '-' }}</td>
                         <td>
                             <span class="badge bg-info">{{ beca.tipo }}</span>
                         </td>
