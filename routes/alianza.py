@@ -31,18 +31,20 @@ def index():
         )
     
     # Obtener datos para selects
-    aliados = api.listar('aliado')
-    docentes = api.listar('docente')
-    
-    return render_template('pages/alianza.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        aliados=aliados,
-        docentes=docentes
-    )
+        aliados = api.listar('aliado')
+        docentes = api.listar('docente')
+        departamentos = api.listar('programa')
+        
+        return render_template('pages/alianza.html',
+            registros=registros,
+            mostrar_formulario=mostrar_formulario,
+            editando=editando,
+            registro=registro,
+            limite=limite,
+            aliados=aliados,
+            docentes=docentes,
+            departamentos=departamentos
+        )
 
 @bp.route('/alianza/crear', methods=['POST'])
 def crear():
