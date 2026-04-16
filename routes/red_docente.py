@@ -69,13 +69,19 @@ def crear():
 def actualizar():
     red = request.form.get('red', '')
     docente = request.form.get('docente', '')
+    # Validar y convertir a int si es posible
+    try:
+        red_id = int(red)
+        docente_id = int(docente)
+    except (ValueError, TypeError):
+        flash('ID de red o docente inválido.', 'danger')
+        return redirect(url_for('red_docente.index'))
     datos = {
         'fecha_inicio': request.form.get('fecha_inicio', ''),
         'fecha_fin': request.form.get('fecha_fin', '') or None,
         'act_destacadas': request.form.get('act_destacadas', '')
     }
-    
-    exito, mensaje = api.actualizar_compuesta(TABLA, ['red', 'docente'], [red, docente], datos)
+    exito, mensaje = api.actualizar_compuesta(TABLA, ['red', 'docente'], [red_id, docente_id], datos)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('red_docente.index'))
 
@@ -83,7 +89,13 @@ def actualizar():
 def eliminar():
     red = request.form.get('red', '')
     docente = request.form.get('docente', '')
-    
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['red', 'docente'], [red, docente])
+    # Validar y convertir a int si es posible
+    try:
+        red_id = int(red)
+        docente_id = int(docente)
+    except (ValueError, TypeError):
+        flash('ID de red o docente inválido.', 'danger')
+        return redirect(url_for('red_docente.index'))
+    exito, mensaje = api.eliminar_compuesta(TABLA, ['red', 'docente'], [red_id, docente_id])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('red_docente.index'))
