@@ -17,12 +17,6 @@ def index():
     accion = request.args.get('accion', '')
     valor_clave = request.args.get('clave', '')
     
-    # DEPURACION
-    print("=" * 50)
-    print(f"accion: {accion}")
-    print(f"valor_clave: {valor_clave}")
-    print(f"editando: {accion == 'editar'}")
-    
     registros = api.listar(TABLA, limite)
     
     mostrar_formulario = accion in ('nuevo', 'editar')
@@ -32,21 +26,15 @@ def index():
     alianzas = []
     
     if editando and valor_clave:
-        print(f"Buscando aliado con clave: {valor_clave}")
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
-        print(f"Registro encontrado: {registro}")
-        
         try:
             aliado_id = int(valor_clave)
         except (ValueError, TypeError):
             aliado_id = valor_clave
-        
-        print(f"aliado_id: {aliado_id}")
         alianzas = api.listar_alianzas_aliado(aliado_id)
-        print(f"Alianzas encontradas (sin enriquecer): {len(alianzas)}")
         
         # Enriquecer alianzas con nombres de departamento y docente
         if alianzas:
@@ -57,17 +45,10 @@ def index():
             for a in alianzas:
                 a['departamento_nombre'] = deptos_dict.get(str(a.get('departamento')), a.get('departamento'))
                 a['docente_nombre'] = docentes_dict.get(str(a.get('docente')), a.get('docente'))
-            
-            print(f"Alianzas enriquecidas: {len(alianzas)}")
-            for a in alianzas:
-                print(f"  - {a.get('departamento_nombre')}: {a.get('docente_nombre')}")
     
     # Obtener listas para selects
     departamentos = api.listar('programa')
     docentes = api.listar('docente')
-    
-    print(f"Enviando al template: editando={editando}, mostrar_formulario={mostrar_formulario}, alianzas={len(alianzas)}")
-    print("=" * 50)
     
     return render_template('pages/aliado.html',
         registros=registros,
@@ -168,6 +149,21 @@ def actualizar():
 @bp.route('/aliado/eliminar', methods=['POST'])
 def eliminar():
     valor = request.form.get('nit', '')
+    
+    if not valor:
+        flash('No se proporcionó NIT para eliminar.', 'danger')
+        return redirect(url_for('aliado.index'))
+    
+    # Primero eliminar las alianzas asociadas
+    try:
+        aliado_id = int(valor)
+        alianzas = api.listar_alianzas_aliado(aliado_id)
+        for alianza in alianzas:
+            api.eliminar_compuesta('alianza', ['aliado', 'departamento'], [alianza.get('aliado'), alianza.get('departamento')])
+    except Exception as e:
+        print(f"Error al eliminar alianzas: {e}")
+    
+    # Luego eliminar el aliado
     exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('aliado.index'))
