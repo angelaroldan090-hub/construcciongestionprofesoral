@@ -23,15 +23,12 @@ def index():
     editando = accion == 'editar'
     
     registro = None
-    alianzas = []
     
     if editando and valor_clave:
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
-        # Obtener alianzas del aliado
-        alianzas = api.listar_alianzas_aliado(valor_clave)
     
     # Obtener listas para selects
     departamentos = api.listar('programa')
@@ -42,7 +39,6 @@ def index():
         mostrar_formulario=mostrar_formulario,
         editando=editando,
         registro=registro,
-        alianzas=alianzas,
         limite=limite,
         departamentos=departamentos,
         docentes=docentes

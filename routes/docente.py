@@ -23,15 +23,12 @@ def index():
     editando = accion == 'editar'
     
     registro = None
-    vinculaciones = []
     
     if editando and valor_clave:
         registro = next(
             (r for r in registros if str(r.get(CLAVE)) == valor_clave),
             None
         )
-        # Obtener vinculaciones departamentales del docente
-        vinculaciones = api.listar_vinculaciones_docente(valor_clave)
     
     # Obtener listas para selects
     lineas = api.listar('linea_investigacion')
@@ -42,7 +39,6 @@ def index():
         mostrar_formulario=mostrar_formulario,
         editando=editando,
         registro=registro,
-        vinculaciones=vinculaciones,
         limite=limite,
         lineas=lineas,
         departamentos=departamentos
