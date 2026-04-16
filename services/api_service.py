@@ -76,49 +76,51 @@ class ApiService:
 
     # ========== MÉTODOS PARA CLAVES PRIMARIAS COMPUESTAS ==========
 
-    def actualizar_compuesta(self, tabla, nombres_claves, valores_claves, datos, campos_encriptar=None):
+    def actualizar_compuesta(self, tabla, claves, valores, datos):
         """
-        Actualiza un registro con clave primaria compuesta usando query string.
+        Actualiza un registro con clave primaria compuesta.
+        
+        Args:
+            tabla: nombre de la tabla
+            claves: lista de nombres de las columnas que forman la PK (ej: ['red', 'docente'])
+            valores: lista de valores correspondientes (ej: [1, 12345678])
+            datos: diccionario con los campos a actualizar
+        
+        Returns:
+            Tupla (exito: bool, mensaje: str)
         """
         try:
-            # Construir query string con pares clave=valor
-            params = {nombre: valor for nombre, valor in zip(nombres_claves, valores_claves)}
-            if campos_encriptar:
-                params['camposEncriptar'] = campos_encriptar
+            # Construir URL con los parámetros en la query string
+            params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
+            url = f"{self.base_url}/api/{tabla}?{params}"
             
-            # Usar la ruta raíz /api/tabla con parámetros en query string
-            url = f"{self.base_url}/api/{tabla}"
-            
-            print(f"[DEBUG] PUT (compuesta): {url}")
-            print(f"[DEBUG] Params: {params}")
-            print(f"[DEBUG] Datos: {datos}")
-            
-            respuesta = requests.put(url, json=datos, params=params)
+            respuesta = requests.put(url, json=datos)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro actualizado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
         except requests.RequestException as ex:
-            print(f"[ERROR] actualizar_compuesta: {ex}")
             return (False, f"Error de conexion: {ex}")
 
-    def eliminar_compuesta(self, tabla, nombres_claves, valores_claves):
+    def eliminar_compuesta(self, tabla, claves, valores):
         """
-        Elimina un registro con clave primaria compuesta usando query string.
+        Elimina un registro con clave primaria compuesta.
+        
+        Args:
+            tabla: nombre de la tabla
+            claves: lista de nombres de las columnas que forman la PK (ej: ['red', 'docente'])
+            valores: lista de valores correspondientes (ej: [1, 12345678])
+        
+        Returns:
+            Tupla (exito: bool, mensaje: str)
         """
         try:
-            # Construir query string con pares clave=valor
-            params = {nombre: valor for nombre, valor in zip(nombres_claves, valores_claves)}
+            # Construir URL con los parámetros en la query string
+            params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
+            url = f"{self.base_url}/api/{tabla}?{params}"
             
-            # Usar la ruta raíz /api/tabla con parámetros en query string
-            url = f"{self.base_url}/api/{tabla}"
-            
-            print(f"[DEBUG] DELETE (compuesta): {url}")
-            print(f"[DEBUG] Params: {params}")
-            
-            respuesta = requests.delete(url, params=params)
+            respuesta = requests.delete(url)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro eliminado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
         except requests.RequestException as ex:
-            print(f"[ERROR] eliminar_compuesta: {ex}")
             return (False, f"Error de conexion: {ex}")
