@@ -58,6 +58,12 @@ class ApiService:
             if campos_encriptar:
                 params['camposEncriptar'] = campos_encriptar
             respuesta = requests.put(url, json=datos, params=params)
+            if not respuesta.ok:
+                url = f"{self.base_url}/api/{tabla}"
+                params = {nombre_clave: valor_clave}
+                if campos_encriptar:
+                    params['camposEncriptar'] = campos_encriptar
+                respuesta = requests.put(url, json=datos, params=params)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro actualizado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
@@ -68,6 +74,9 @@ class ApiService:
         try:
             url = f"{self.base_url}/api/{tabla}/{nombre_clave}/{valor_clave}"
             respuesta = requests.delete(url)
+            if not respuesta.ok:
+                url = f"{self.base_url}/api/{tabla}"
+                respuesta = requests.delete(url, params={nombre_clave: valor_clave})
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro eliminado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
@@ -90,11 +99,9 @@ class ApiService:
             Tupla (exito: bool, mensaje: str)
         """
         try:
-            # Construir URL con los parámetros en la query string
-            params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
-            url = f"{self.base_url}/api/{tabla}?{params}"
-            
-            respuesta = requests.put(url, json=datos)
+            url = f"{self.base_url}/api/{tabla}"
+            params = {clave: valor for clave, valor in zip(claves, valores)}
+            respuesta = requests.put(url, json=datos, params=params)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro actualizado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
@@ -114,11 +121,9 @@ class ApiService:
             Tupla (exito: bool, mensaje: str)
         """
         try:
-            # Construir URL con los parámetros en la query string
-            params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
-            url = f"{self.base_url}/api/{tabla}?{params}"
-            
-            respuesta = requests.delete(url)
+            url = f"{self.base_url}/api/{tabla}"
+            params = {clave: valor for clave, valor in zip(claves, valores)}
+            respuesta = requests.delete(url, params=params)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro eliminado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
