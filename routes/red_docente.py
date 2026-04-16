@@ -15,16 +15,40 @@ CLAVE_COMPUESTA = ['red', 'docente']
 def index():
     limite = request.args.get('limite', type=int)
     registros = api.listar(TABLA, limite)
-    
-    # Obtener datos para selects
     redes = api.listar('red')
     docentes = api.listar('docente')
-    
+
+    # Manejo de formulario modal
+    accion = request.args.get('accion')
+    clave = request.args.get('clave')
+    mostrar_formulario = False
+    editando = False
+    registro = None
+
+    if accion == 'nuevo':
+        mostrar_formulario = True
+        editando = False
+    elif accion == 'editar' and clave:
+        try:
+            red_id, docente_id = clave.split('|')
+            # Buscar el registro correspondiente
+            for r in registros:
+                if str(r.get('red')) == str(red_id) and str(r.get('docente')) == str(docente_id):
+                    registro = r
+                    break
+            mostrar_formulario = True
+            editando = True
+        except Exception:
+            pass
+
     return render_template('pages/red_docente.html',
         registros=registros,
         limite=limite,
         redes=redes,
-        docentes=docentes
+        docentes=docentes,
+        mostrar_formulario=mostrar_formulario,
+        editando=editando,
+        registro=registro
     )
 
 @bp.route('/red_docente/crear', methods=['POST'])
