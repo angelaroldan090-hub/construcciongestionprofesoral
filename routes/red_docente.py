@@ -1,5 +1,5 @@
 """
-red_docente.py - Blueprint para la tabla intermedia red_docente (N:N entre red y docente)
+red_docente.py - Blueprint para tabla intermedia (N:N)
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
@@ -9,79 +9,63 @@ bp = Blueprint('red_docente', __name__)
 api = ApiService()
 
 TABLA = 'red_docente'
-CLAVES = ['red', 'docente']  # Nombres de las columnas de la PK compuesta
+CLAVES = ['red', 'docente']  # Nombres de las columnas PK
 
 @bp.route('/red_docente')
 def index():
     limite = request.args.get('limite', type=int)
-    registros = api.listar(TABLA, limite)
+    accion = request.args.get('accion')
+    clave = request.args.get('clave')
     
-    # Obtener datos para selects
+    # Obtener datos principales
+    registros = api.listar(TABLA, limite)
     redes = api.listar('red')
     docentes = api.listar('docente')
     
-    # Manejo de formulario modal
-    accion = request.args.get('accion')
-    clave = request.args.get('clave')
-    mostrar_formulario = False
-    editando = False
+    # Configurar modal
+    mostrar_formulario = accion in ('nuevo', 'editar')
+    editando = accion == 'editar'
     registro = None
     
-    if accion == 'nuevo':
-        mostrar_formulario = True
-        editando = False
-    elif accion == 'editar' and clave:
+    if editando and clave:
         try:
-            # La clave viene como "red|docente"
-            partes = clave.split('|')
-            if len(partes) == 2:
-                red_id = int(partes[0])
-                docente_id = int(partes[1])
-                # Buscar el registro en la lista
-                for r in registros:
-                    if r.get('red') == red_id and r.get('docente') == docente_id:
-                        registro = r
-                        break
-                mostrar_formulario = True
-                editando = True
-        except (ValueError, TypeError, IndexError) as e:
-            print(f"Error al parsear clave: {e}")
+            red_id, docente_id = clave.split('|')
+            for r in registros:
+                if str(r.get('red')) == red_id and str(r.get('docente')) == docente_id:
+                    registro = r
+                    break
+        except:
+            pass
     
     return render_template('pages/red_docente.html',
         registros=registros,
-        limite=limite,
         redes=redes,
         docentes=docentes,
         mostrar_formulario=mostrar_formulario,
         editando=editando,
-        registro=registro
+        registro=registro,
+        limite=limite
     )
 
 @bp.route('/red_docente/crear', methods=['POST'])
 def crear():
-    red = request.form.get('red', '')
-    docente = request.form.get('docente', '')
-    fecha_inicio = request.form.get('fecha_inicio', '')
-    fecha_fin = request.form.get('fecha_fin', '')
-    act_destacadas = request.form.get('act_destacadas', '')
-    
-    # Validar que los campos requeridos no estén vacíos
-    if not red or not docente:
-        flash('Debe seleccionar una red y un docente.', 'danger')
-        return redirect(url_for('red_docente.index'))
-    
-    # Validar fechas
-    if not fecha_inicio:
-        flash('La fecha de inicio es requerida.', 'danger')
-        return redirect(url_for('red_docente.index'))
-    
+    """Crear nueva relación"""
     datos = {
-        'red': int(red),
-        'docente': int(docente),
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin if fecha_fin else None,
-        'act_destacadas': act_destacadas
+        'red': request.form.get('red'),
+        'docente': request.form.get('docente'),
+        'fecha_inicio': request.form.get('fecha_inicio'),
+        'fecha_fin': request.form.get('fecha_fin') or None,
+        'act_destacadas': request.form.get('act_destacadas')
     }
+    
+    # Validaciones básicas
+    if not datos['red'] or not datos['docente']:
+        flash('Debe seleccionar una red y un docente', 'danger')
+        return redirect(url_for('red_docente.index'))
+    
+    if not datos['fecha_inicio']:
+        flash('La fecha de inicio es requerida', 'danger')
+        return redirect(url_for('red_docente.index'))
     
     exito, mensaje = api.crear(TABLA, datos)
     flash(mensaje, 'success' if exito else 'danger')
@@ -89,67 +73,45 @@ def crear():
 
 @bp.route('/red_docente/actualizar', methods=['POST'])
 def actualizar():
-    # Obtener la clave original (red y docente originales)
-    red_original = request.form.get('red_original', '')
-    docente_original = request.form.get('docente_original', '')
-    
-    # Obtener los nuevos valores
-    red_nueva = request.form.get('red', '')
-    docente_nuevo = request.form.get('docente', '')
-    fecha_inicio = request.form.get('fecha_inicio', '')
-    fecha_fin = request.form.get('fecha_fin', '')
-    act_destacadas = request.form.get('act_destacadas', '')
+    """Actualizar relación existente"""
+    red_original = request.form.get('red_original')
+    docente_original = request.form.get('docente_original')
+    red_nueva = request.form.get('red')
+    docente_nuevo = request.form.get('docente')
     
     # Validar campos requeridos
     if not red_nueva or not docente_nuevo:
-        flash('Debe seleccionar una red y un docente.', 'danger')
+        flash('Debe seleccionar una red y un docente', 'danger')
         return redirect(url_for('red_docente.index'))
     
-    if not fecha_inicio:
-        flash('La fecha de inicio es requerida.', 'danger')
-        return redirect(url_for('red_docente.index'))
+    # Datos a actualizar
+    datos_actualizar = {
+        'fecha_inicio': request.form.get('fecha_inicio'),
+        'fecha_fin': request.form.get('fecha_fin') or None,
+        'act_destacadas': request.form.get('act_destacadas')
+    }
     
-    try:
-        red_original_int = int(red_original)
-        docente_original_int = int(docente_original)
-        red_nueva_int = int(red_nueva)
-        docente_nuevo_int = int(docente_nuevo)
-    except (ValueError, TypeError):
-        flash('ID de red o docente inválido.', 'danger')
-        return redirect(url_for('red_docente.index'))
-    
-    # Si la clave compuesta cambió (se seleccionó otra red u otro docente)
-    if red_original_int != red_nueva_int or docente_original_int != docente_nuevo_int:
-        # Opción 1: Eliminar el antiguo y crear el nuevo
-        exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(
-            TABLA, CLAVES, [red_original_int, docente_original_int]
+    # Si la clave primaria cambió
+    if red_original != red_nueva or docente_original != docente_nuevo:
+        # Método: eliminar antiguo + crear nuevo
+        exito_eliminar, _ = api.eliminar_compuesta(
+            TABLA, CLAVES, [red_original, docente_original]
         )
         
         if exito_eliminar:
             datos_nuevos = {
-                'red': red_nueva_int,
-                'docente': docente_nuevo_int,
-                'fecha_inicio': fecha_inicio,
-                'fecha_fin': fecha_fin if fecha_fin else None,
-                'act_destacadas': act_destacadas
+                'red': red_nueva,
+                'docente': docente_nuevo,
+                **datos_actualizar
             }
-            exito_crear, mensaje_crear = api.crear(TABLA, datos_nuevos)
-            
-            if exito_crear:
-                flash('Registro actualizado exitosamente.', 'success')
-            else:
-                flash(f'Error al actualizar: {mensaje_crear}', 'danger')
+            exito_crear, mensaje = api.crear(TABLA, datos_nuevos)
+            flash(mensaje, 'success' if exito_crear else 'danger')
         else:
-            flash(f'Error al actualizar: {mensaje_eliminar}', 'danger')
+            flash('Error al actualizar la relación', 'danger')
     else:
-        # La clave no cambió, solo actualizar los campos
-        datos_actualizar = {
-            'fecha_inicio': fecha_inicio,
-            'fecha_fin': fecha_fin if fecha_fin else None,
-            'act_destacadas': act_destacadas
-        }
+        # La clave no cambió, solo actualizar atributos
         exito, mensaje = api.actualizar_compuesta(
-            TABLA, CLAVES, [red_original_int, docente_original_int], datos_actualizar
+            TABLA, CLAVES, [red_original, docente_original], datos_actualizar
         )
         flash(mensaje, 'success' if exito else 'danger')
     
@@ -157,20 +119,14 @@ def actualizar():
 
 @bp.route('/red_docente/eliminar', methods=['POST'])
 def eliminar():
-    red = request.form.get('red', '')
-    docente = request.form.get('docente', '')
+    """Eliminar relación"""
+    red = request.form.get('red')
+    docente = request.form.get('docente')
     
     if not red or not docente:
-        flash('Datos de red o docente no proporcionados.', 'danger')
+        flash('Datos incompletos para eliminar', 'danger')
         return redirect(url_for('red_docente.index'))
     
-    try:
-        red_id = int(red)
-        docente_id = int(docente)
-    except (ValueError, TypeError):
-        flash('ID de red o docente inválido.', 'danger')
-        return redirect(url_for('red_docente.index'))
-    
-    exito, mensaje = api.eliminar_compuesta(TABLA, CLAVES, [red_id, docente_id])
+    exito, mensaje = api.eliminar_compuesta(TABLA, CLAVES, [red, docente])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('red_docente.index'))

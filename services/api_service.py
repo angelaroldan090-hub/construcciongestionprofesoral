@@ -124,3 +124,47 @@ class ApiService:
             return (respuesta.ok, mensaje)
         except requests.RequestException as ex:
             return (False, f"Error de conexion: {ex}")
+        
+        
+# Añadir estos métodos a tu ApiService existente
+
+def crear(self, tabla, datos, campos_encriptar=None):
+    """Crear un registro (funciona para cualquier tabla)"""
+    try:
+        url = f"{self.base_url}/api/{tabla}"
+        params = {}
+        if campos_encriptar:
+            params['camposEncriptar'] = campos_encriptar
+        respuesta = requests.post(url, json=datos, params=params)
+        contenido = _parsear_respuesta(respuesta)
+        mensaje = contenido.get("mensaje", "Operación completada.")
+        return (respuesta.ok, mensaje)
+    except requests.RequestException as ex:
+        return (False, f"Error de conexión: {ex}")
+
+def actualizar_compuesta(self, tabla, claves, valores, datos):
+    """Actualizar registro con PK compuesta"""
+    try:
+        # Construir URL con parámetros: ?clave1=valor1&clave2=valor2
+        params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
+        url = f"{self.base_url}/api/{tabla}?{params}"
+        
+        respuesta = requests.put(url, json=datos)
+        contenido = _parsear_respuesta(respuesta)
+        mensaje = contenido.get("mensaje", "Actualizado correctamente." if respuesta.ok else "Error.")
+        return (respuesta.ok, mensaje)
+    except requests.RequestException as ex:
+        return (False, f"Error de conexión: {ex}")
+
+def eliminar_compuesta(self, tabla, claves, valores):
+    """Eliminar registro con PK compuesta"""
+    try:
+        params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
+        url = f"{self.base_url}/api/{tabla}?{params}"
+        
+        respuesta = requests.delete(url)
+        contenido = _parsear_respuesta(respuesta)
+        mensaje = contenido.get("mensaje", "Eliminado correctamente." if respuesta.ok else "Error.")
+        return (respuesta.ok, mensaje)
+    except requests.RequestException as ex:
+        return (False, f"Error de conexión: {ex}")     
