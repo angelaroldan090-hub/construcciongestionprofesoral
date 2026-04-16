@@ -174,8 +174,35 @@ def actualizar():
 @bp.route('/docente/eliminar', methods=['POST'])
 def eliminar():
     valor = request.form.get('cedula', '')
-    exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-    flash(mensaje, 'success' if exito else 'danger')
+    
+    print(f"=== ELIMINAR DOCENTE ===")
+    print(f"Cedula recibida: {valor}")
+    
+    if not valor:
+        flash('No se proporcionó cédula para eliminar.', 'danger')
+        return redirect(url_for('docente.index'))
+    
+    try:
+        docente_id = int(valor)
+        
+        # Primero eliminar vinculaciones docente_departamento
+        vinculaciones = api.listar_vinculaciones_docente(docente_id)
+        print(f"Vinculaciones encontradas para eliminar: {len(vinculaciones)}")
+        
+        for vinc in vinculaciones:
+            exito_vinc, msg_vinc = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [vinc.get('docente'), vinc.get('departamento')])
+            print(f"Eliminando vinculacion: {vinc.get('docente')}|{vinc.get('departamento')} -> Exito: {exito_vinc}, Mensaje: {msg_vinc}")
+        
+        # Luego eliminar el docente
+        exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
+        print(f"Eliminando docente: Exito={exito}, Mensaje={mensaje}")
+        
+        flash(mensaje, 'success' if exito else 'danger')
+    except Exception as e:
+        print(f"Error en eliminar docente: {e}")
+        flash(f'Error al eliminar: {str(e)}', 'danger')
+    
+    print(f"==========================")
     return redirect(url_for('docente.index'))
 
 @bp.route('/api/docente/<int:docente_id>/vinculaciones', methods=['GET'])
