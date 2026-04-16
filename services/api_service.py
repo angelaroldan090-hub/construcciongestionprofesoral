@@ -79,19 +79,24 @@ class ApiService:
     def actualizar_compuesta(self, tabla, nombres_claves, valores_claves, datos, campos_encriptar=None):
         """
         Actualiza un registro con clave primaria compuesta.
-        nombres_claves: lista de nombres de las columnas que forman la PK
-        valores_claves: lista de valores correspondientes
+        Intenta primero con query string y, si falla, con values en el path.
         """
         try:
-            # Construir URL con los pares clave=valor
-            params_compuestos = '&'.join([f"{nombre}={valor}" for nombre, valor in zip(nombres_claves, valores_claves)])
-            url = f"{self.base_url}/api/{tabla}?{params_compuestos}"
-            
-            params = {}
+            params = {nombre: valor for nombre, valor in zip(nombres_claves, valores_claves)}
             if campos_encriptar:
                 params['camposEncriptar'] = campos_encriptar
-            
-            respuesta = requests.put(url, json=datos, params=params)
+
+            url_query = f"{self.base_url}/api/{tabla}"
+            respuesta = requests.put(url_query, json=datos, params=params)
+            if respuesta.ok:
+                contenido = _parsear_respuesta(respuesta)
+                mensaje = contenido.get("mensaje", "Registro actualizado exitosamente.")
+                return (True, mensaje)
+
+            path_ids = '/'.join(str(valor) for valor in valores_claves)
+            url_path = f"{self.base_url}/api/{tabla}/{path_ids}"
+            params_path = {'camposEncriptar': campos_encriptar} if campos_encriptar else None
+            respuesta = requests.put(url_path, json=datos, params=params_path)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro actualizado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
@@ -101,11 +106,20 @@ class ApiService:
     def eliminar_compuesta(self, tabla, nombres_claves, valores_claves):
         """
         Elimina un registro con clave primaria compuesta.
+        Intenta primero con query string y, si falla, con values en el path.
         """
         try:
-            params_compuestos = '&'.join([f"{nombre}={valor}" for nombre, valor in zip(nombres_claves, valores_claves)])
-            url = f"{self.base_url}/api/{tabla}?{params_compuestos}"
-            respuesta = requests.delete(url)
+            params = {nombre: valor for nombre, valor in zip(nombres_claves, valores_claves)}
+            url_query = f"{self.base_url}/api/{tabla}"
+            respuesta = requests.delete(url_query, params=params)
+            if respuesta.ok:
+                contenido = _parsear_respuesta(respuesta)
+                mensaje = contenido.get("mensaje", "Registro eliminado exitosamente.")
+                return (True, mensaje)
+
+            path_ids = '/'.join(str(valor) for valor in valores_claves)
+            url_path = f"{self.base_url}/api/{tabla}/{path_ids}"
+            respuesta = requests.delete(url_path)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro eliminado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
