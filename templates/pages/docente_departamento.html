@@ -170,11 +170,11 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Departamento <span class="text-danger">*</span></label>
+                            <label class="form-label">Programa <span class="text-danger">*</span></label>
                             <select class="form-select" name="departamento" required>
-                                <option value="">Seleccionar departamento</option>
-                                {% for depto in departamentos %}
-                                <option value="{{ depto.id }}">{{ depto.nombre }}</option>
+                                <option value="">Seleccionar programa</option>
+                                {% for prog in programas %}
+                                <option value="{{ prog.id }}">{{ prog.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
