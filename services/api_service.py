@@ -77,23 +77,9 @@ class ApiService:
     # ========== MÉTODOS PARA CLAVES PRIMARIAS COMPUESTAS ==========
 
     def actualizar_compuesta(self, tabla, claves, valores, datos):
-        """
-        Actualiza un registro con clave primaria compuesta.
-        
-        Args:
-            tabla: nombre de la tabla
-            claves: lista de nombres de las columnas que forman la PK (ej: ['red', 'docente'])
-            valores: lista de valores correspondientes (ej: [1, 12345678])
-            datos: diccionario con los campos a actualizar
-        
-        Returns:
-            Tupla (exito: bool, mensaje: str)
-        """
         try:
-            # Construir URL con los parámetros en la query string
             params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
             url = f"{self.base_url}/api/{tabla}?{params}"
-            
             respuesta = requests.put(url, json=datos)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro actualizado exitosamente." if respuesta.ok else "Error en la operación.")
@@ -102,39 +88,39 @@ class ApiService:
             return (False, f"Error de conexion: {ex}")
 
     def eliminar_compuesta(self, tabla, claves, valores):
-        """
-        Elimina un registro con clave primaria compuesta.
-        
-        Args:
-            tabla: nombre de la tabla
-            claves: lista de nombres de las columnas que forman la PK (ej: ['red', 'docente'])
-            valores: lista de valores correspondientes (ej: [1, 12345678])
-        
-        Returns:
-            Tupla (exito: bool, mensaje: str)
-        """
         try:
-            # Construir URL con los parámetros en la query string
             params = '&'.join([f"{clave}={valor}" for clave, valor in zip(claves, valores)])
             url = f"{self.base_url}/api/{tabla}?{params}"
-            
             respuesta = requests.delete(url)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Registro eliminado exitosamente." if respuesta.ok else "Error en la operación.")
             return (respuesta.ok, mensaje)
         except requests.RequestException as ex:
-            return (False, f"Error de conexion: {ex}")     
+            return (False, f"Error de conexion: {ex}")
+
+    def eliminar_compuesta_bd(self, tabla, filtros):
+        """Elimina directamente en PostgreSQL para claves compuestas"""
+        import psycopg2
+        from config import DB_CONFIG
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            condiciones = ' AND '.join([f'"{k}" = %s' for k in filtros.keys()])
+            sql = f'DELETE FROM public."{tabla}" WHERE {condiciones}'
+            cur.execute(sql, list(filtros.values()))
+            filas = cur.rowcount
+            conn.commit()
+            cur.close()
+            conn.close()
+            return (filas > 0, "Registro eliminado exitosamente." if filas > 0 else "No se encontró el registro.")
+        except Exception as ex:
+            return (False, f"Error al eliminar: {ex}")
 
     def ejecutar_procedimiento(self, nombre_proc, parametros):
-        """Ejecuta un procedimiento almacenado"""
         try:
-            # Construir la llamada al procedimiento
             placeholders = ','.join(['%s'] * len(parametros))
             query = f"CALL public.{nombre_proc}({placeholders}, NULL)"
-            
             self.cursor.execute(query, parametros)
-            
-            # Obtener el mensaje OUT
             mensaje = self.cursor.fetchone()
             self.conn.commit()
             return True, mensaje[0] if mensaje else "Ejecutado correctamente"
@@ -143,7 +129,6 @@ class ApiService:
             return False, str(e)
 
     def listar_vinculaciones_docente(self, docente_id):
-        """Lista las vinculaciones de un docente usando la API backend"""
         try:
             registros = self.listar('docente_departamento')
             return [r for r in registros if str(r.get('docente')) == str(docente_id)]
@@ -152,7 +137,6 @@ class ApiService:
             return []
 
     def listar_alianzas_aliado(self, aliado_id):
-        """Lista las alianzas de un aliado usando la API backend"""
         try:
             registros = self.listar('alianza')
             return [r for r in registros if str(r.get('aliado')) == str(aliado_id)]
