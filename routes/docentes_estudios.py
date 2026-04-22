@@ -1,4 +1,9 @@
 # En routes/docente_estudios.py
+from flask import request, redirect, url_for, flash, Blueprint
+import json
+from . import api
+
+bp = Blueprint('docente_estudios', __name__)
 
 @bp.route('/docente/crear', methods=['POST'])
 def crear():
