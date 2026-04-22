@@ -118,8 +118,15 @@ def sugerencias():
 
 @bp.route('/aliado/crear', methods=['POST'])
 def crear():
+    nit = request.form.get('nit', '')
+    try:
+        nit = int(nit)
+    except (ValueError, TypeError):
+        flash('NIT inválido.', 'danger')
+        return redirect(url_for('aliado.index'))
+
     datos = {
-        'nit': request.form.get('nit', ''),
+        'nit': nit,
         'razon_social': request.form.get('razon_social', ''),
         'nombre_contacto': request.form.get('nombre_contacto', ''),
         'correo': request.form.get('correo', ''),
@@ -134,6 +141,12 @@ def crear():
 @bp.route('/aliado/actualizar', methods=['POST'])
 def actualizar():
     valor = request.form.get('nit', '')
+    try:
+        valor = int(valor)
+    except (ValueError, TypeError):
+        flash('NIT inválido para actualizar.', 'danger')
+        return redirect(url_for('aliado.index'))
+
     datos = {
         'razon_social': request.form.get('razon_social', ''),
         'nombre_contacto': request.form.get('nombre_contacto', ''),
@@ -187,17 +200,30 @@ def crear_alianza():
         'fecha_fin': data.get('fecha_fin'),
         'docente': data.get('docente')
     }
-    exito, mensaje = api.crear('alianza', datos)
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('insert_alianza', [
+        datos.get('aliado'),
+        datos.get('departamento'),
+        datos.get('fecha_inicio'),
+        datos.get('fecha_fin'),
+        datos.get('docente')
+    ])
+    if not exito:
+        exito, mensaje = api.crear('alianza', datos)
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/alianza/eliminar', methods=['POST'])
 def eliminar_alianza():
     """Eliminar alianza"""
     data = request.json
-    exito, mensaje = api.eliminar_compuesta_bd('alianza', {
-        'aliado': data.get('aliado'),
-        'departamento': data.get('departamento')
-    })
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('delete_alianza', [
+        data.get('aliado'),
+        data.get('departamento')
+    ])
+    if not exito:
+        exito, mensaje = api.eliminar_compuesta('alianza', ['aliado', 'departamento'], [
+            data.get('aliado'),
+            data.get('departamento')
+        ])
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/alianza/actualizar', methods=['POST'])
@@ -211,5 +237,13 @@ def actualizar_alianza():
         'fecha_fin': data.get('fecha_fin'),
         'docente': data.get('docente')
     }
-    exito, mensaje = api.actualizar_compuesta('alianza', ['aliado', 'departamento'], [data.get('aliado'), data.get('departamento')], datos)
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('update_alianza', [
+        datos.get('aliado'),
+        datos.get('departamento'),
+        datos.get('fecha_inicio'),
+        datos.get('fecha_fin'),
+        datos.get('docente')
+    ])
+    if not exito:
+        exito, mensaje = api.actualizar_compuesta('alianza', ['aliado', 'departamento'], [data.get('aliado'), data.get('departamento')], datos)
     return jsonify({'success': exito, 'message': mensaje})

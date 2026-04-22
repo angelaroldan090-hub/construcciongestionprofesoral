@@ -205,7 +205,16 @@ def crear():
         'fecha_salida': request.form.get('fecha_salida', '') or None
     }
     
-    exito, mensaje = api.crear(TABLA, datos)
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('insert_docente_departamento', [
+        docente_id,
+        departamento_id,
+        datos['dedicacion'],
+        datos['modalidad'],
+        datos['fecha_ingreso'],
+        datos['fecha_salida']
+    ])
+    if not exito:
+        exito, mensaje = api.crear(TABLA, datos)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('docente_departamento.index'))
 
@@ -229,28 +238,32 @@ def actualizar():
         'fecha_salida': request.form.get('fecha_salida', '') or None
     }
     
-    # Para claves compuestas, simular actualización con DELETE + CREATE
-    # Paso 1: Eliminar el registro actual
-    exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['docente', 'departamento'], [docente_id, departamento_id])
-    
-    if exito_eliminar:
-        # Paso 2: Crear el registro con los datos nuevos
-        datos_crear = {
-            'docente': docente_id,
-            'departamento': departamento_id,
-            'dedicacion': datos['dedicacion'],
-            'modalidad': datos['modalidad'],
-            'fecha_ingreso': datos['fecha_ingreso'],
-            'fecha_salida': datos['fecha_salida']
-        }
-        exito_crear, mensaje_crear = api.crear(TABLA, datos_crear)
-        
-        if exito_crear:
-            flash('Registro actualizado exitosamente.', 'success')
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('update_docente_departamento', [
+        docente_id,
+        departamento_id,
+        datos['dedicacion'],
+        datos['modalidad'],
+        datos['fecha_ingreso'],
+        datos['fecha_salida']
+    ])
+
+    if not exito:
+        # Fallback para backends sin SP
+        exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['docente', 'departamento'], [docente_id, departamento_id])
+        if exito_eliminar:
+            datos_crear = {
+                'docente': docente_id,
+                'departamento': departamento_id,
+                'dedicacion': datos['dedicacion'],
+                'modalidad': datos['modalidad'],
+                'fecha_ingreso': datos['fecha_ingreso'],
+                'fecha_salida': datos['fecha_salida']
+            }
+            exito, mensaje = api.crear(TABLA, datos_crear)
         else:
-            flash(f'Error al recrear registro: {mensaje_crear}', 'danger')
-    else:
-        flash(f'Error al actualizar: {mensaje_eliminar}', 'danger')
+            exito, mensaje = False, mensaje_eliminar
+
+    flash(mensaje, 'success' if exito else 'danger')
     
     return redirect(url_for('docente_departamento.index'))
 
@@ -267,6 +280,8 @@ def eliminar():
         flash('ID de docente o departamento inválido.', 'danger')
         return redirect(url_for('docente_departamento.index'))
     
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['docente', 'departamento'], [docente_id, departamento_id])
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('delete_docente_departamento', [docente_id, departamento_id])
+    if not exito:
+        exito, mensaje = api.eliminar_compuesta(TABLA, ['docente', 'departamento'], [docente_id, departamento_id])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('docente_departamento.index'))

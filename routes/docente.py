@@ -19,17 +19,6 @@ def index():
     
     registros = api.listar(TABLA, limite)
     
-    # DEPURACION
-    print("=" * 50)
-    print(f"URL: {request.url}")
-    print(f"Tabla: {TABLA}")
-    print(f"Registros recibidos: {len(registros)}")
-    if registros:
-        print(f"Primer registro: {registros[0]}")
-    else:
-        print("No hay registros")
-    print("=" * 50)
-    
     mostrar_formulario = accion in ('nuevo', 'editar')
     editando = accion == 'editar'
     
@@ -42,14 +31,11 @@ def index():
             None
         )
         vinculaciones = api.listar_vinculaciones_docente(valor_clave)
-        
-        # DEPURACION
-        print(f"=== DEPURACION VINCULACIONES ===")
-        print(f"Docente ID: {valor_clave}")
-        print(f"Vinculaciones encontradas: {len(vinculaciones)}")
-        for v in vinculaciones:
-            print(f"  - {v}")
-        print(f"================================")
+
+        programas = api.listar('programa')
+        programas_por_id = {str(p.get('id')): p.get('nombre', '') for p in programas}
+        for vinc in vinculaciones:
+            vinc['departamento_nombre'] = programas_por_id.get(str(vinc.get('departamento')), vinc.get('departamento'))
     
     # Obtener listas para selects
     lineas = api.listar('linea_investigacion')
@@ -123,8 +109,21 @@ def sugerencias():
 
 @bp.route('/docente/crear', methods=['POST'])
 def crear():
+    cedula = request.form.get('cedula', '')
+    try:
+        cedula = int(cedula)
+    except (ValueError, TypeError):
+        flash('Cédula inválida.', 'danger')
+        return redirect(url_for('docente.index'))
+
+    linea = request.form.get('linea_investigacion_principal', '')
+    try:
+        linea = int(linea) if linea else None
+    except (ValueError, TypeError):
+        linea = None
+
     datos = {
-        'cedula': request.form.get('cedula', ''),
+        'cedula': cedula,
         'nombres': request.form.get('nombres', ''),
         'apellidos': request.form.get('apellidos', ''),
         'genero': request.form.get('genero', ''),
@@ -139,7 +138,7 @@ def crear():
         'cat_minciencia': request.form.get('cat_minciencia', ''),
         'conv_minciencia': request.form.get('conv_minciencia', ''),
         'nacionalidad': request.form.get('nacionalidad', ''),
-        'linea_investigacion_principal': request.form.get('linea_investigacion_principal', '') or None
+        'linea_investigacion_principal': linea
     }
     
     exito, mensaje = api.crear(TABLA, datos)
@@ -149,6 +148,18 @@ def crear():
 @bp.route('/docente/actualizar', methods=['POST'])
 def actualizar():
     valor = request.form.get('cedula', '')
+    try:
+        valor = int(valor)
+    except (ValueError, TypeError):
+        flash('Cédula inválida para actualizar.', 'danger')
+        return redirect(url_for('docente.index'))
+
+    linea = request.form.get('linea_investigacion_principal', '')
+    try:
+        linea = int(linea) if linea else None
+    except (ValueError, TypeError):
+        linea = None
+
     datos = {
         'nombres': request.form.get('nombres', ''),
         'apellidos': request.form.get('apellidos', ''),
@@ -164,7 +175,7 @@ def actualizar():
         'cat_minciencia': request.form.get('cat_minciencia', ''),
         'conv_minciencia': request.form.get('conv_minciencia', ''),
         'nacionalidad': request.form.get('nacionalidad', ''),
-        'linea_investigacion_principal': request.form.get('linea_investigacion_principal', '') or None
+        'linea_investigacion_principal': linea
     }
     
     exito, mensaje = api.actualizar(TABLA, CLAVE, valor, datos)
@@ -175,9 +186,6 @@ def actualizar():
 def eliminar():
     valor = request.form.get('cedula', '')
     
-    print(f"=== ELIMINAR DOCENTE ===")
-    print(f"Cedula recibida: {valor}")
-    
     if not valor:
         flash('No se proporcionó cédula para eliminar.', 'danger')
         return redirect(url_for('docente.index'))
@@ -187,22 +195,17 @@ def eliminar():
         
         # Primero eliminar vinculaciones docente_departamento
         vinculaciones = api.listar_vinculaciones_docente(docente_id)
-        print(f"Vinculaciones encontradas para eliminar: {len(vinculaciones)}")
         
         for vinc in vinculaciones:
-            exito_vinc, msg_vinc = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [vinc.get('docente'), vinc.get('departamento')])
-            print(f"Eliminando vinculacion: {vinc.get('docente')}|{vinc.get('departamento')} -> Exito: {exito_vinc}, Mensaje: {msg_vinc}")
+            api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [vinc.get('docente'), vinc.get('departamento')])
         
         # Luego eliminar el docente
         exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-        print(f"Eliminando docente: Exito={exito}, Mensaje={mensaje}")
         
         flash(mensaje, 'success' if exito else 'danger')
     except Exception as e:
-        print(f"Error en eliminar docente: {e}")
         flash(f'Error al eliminar: {str(e)}', 'danger')
-    
-    print(f"==========================")
+
     return redirect(url_for('docente.index'))
 
 @bp.route('/api/docente/<int:docente_id>/vinculaciones', methods=['GET'])
@@ -243,20 +246,31 @@ def crear_vinculacion():
             'fecha_salida': data.get('fecha_salida') or None
         }
         
-        print(f"[DEBUG] Creando vinculación con datos: {datos}")
-        exito, mensaje = api.crear('docente_departamento', datos)
-        print(f"[DEBUG] Resultado: exito={exito}, mensaje={mensaje}")
+        exito, mensaje = api.ejecutar_procedimiento_mensaje('insert_docente_departamento', [
+            datos.get('docente'),
+            datos.get('departamento'),
+            datos.get('dedicacion'),
+            datos.get('modalidad'),
+            datos.get('fecha_ingreso'),
+            datos.get('fecha_salida')
+        ])
+        if not exito:
+            exito, mensaje = api.crear('docente_departamento', datos)
         
         return jsonify({'success': exito, 'message': mensaje})
     except Exception as e:
         error_msg = f"Error al crear vinculación: {str(e)}"
-        print(f"[ERROR] {error_msg}")
         return jsonify({'success': False, 'message': error_msg}), 500
 
 @bp.route('/api/docente_vinculacion/eliminar', methods=['POST'])
 def eliminar_vinculacion():
     data = request.json
-    exito, mensaje = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')])
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('delete_docente_departamento', [
+        data.get('docente'),
+        data.get('departamento')
+    ])
+    if not exito:
+        exito, mensaje = api.eliminar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')])
     return jsonify({'success': exito, 'message': mensaje})
 
 @bp.route('/api/docente_vinculacion/actualizar', methods=['POST'])
@@ -270,5 +284,14 @@ def actualizar_vinculacion():
         'fecha_ingreso': data.get('fecha_ingreso'),
         'fecha_salida': data.get('fecha_salida')
     }
-    exito, mensaje = api.actualizar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')], datos)
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('update_docente_departamento', [
+        datos.get('docente'),
+        datos.get('departamento'),
+        datos.get('dedicacion'),
+        datos.get('modalidad'),
+        datos.get('fecha_ingreso'),
+        datos.get('fecha_salida')
+    ])
+    if not exito:
+        exito, mensaje = api.actualizar_compuesta('docente_departamento', ['docente', 'departamento'], [data.get('docente'), data.get('departamento')], datos)
     return jsonify({'success': exito, 'message': mensaje})

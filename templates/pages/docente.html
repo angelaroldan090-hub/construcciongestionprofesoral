@@ -34,6 +34,12 @@
                 </div>
 
                 <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{{ url_for('docente_departamento.index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-building me-1"></i>Ir a Vinculacion Docente - Departamento
+                        </a>
+                    </div>
+
                     {% if busqueda %}
                     <div class="alert alert-info alert-sm mb-3">
                         <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{
@@ -105,8 +111,6 @@
                 <form method="POST"
                     action="{{ url_for('docente.actualizar') if editando else url_for('docente.crear') }}">
                     <div class="modal-body">
-                        <input type="hidden" name="cedula" value="{{ registro.cedula if registro else '' }}">
-
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
@@ -270,7 +274,7 @@
                         {% if editando %}
                         <hr>
                         <h4 class="mt-3 mb-3">
-                            <i class="fas fa-building me-2"></i>Vinculaciones Departamentales
+                            <i class="fas fa-building me-2"></i>Vinculacion Docente - Departamento
                         </h4>
 
                         <div class="table-responsive mb-3">
