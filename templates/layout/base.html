@@ -447,6 +447,13 @@
                                     <i class="fas fa-star"></i> Evaluación Docente
                                 </a>
                             </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint and 'docentes_estudios' in request.endpoint %}active{% endif %}" 
+                                   href="{{ url_for('docentes_estudios.index') }}">
+                                    <i class="fas fa-graduation-cap"></i> Docentes y Estudios
+                                </a>
+                            </li>
 
                         </ul>
                     </li>
