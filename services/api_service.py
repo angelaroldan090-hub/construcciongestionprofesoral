@@ -5,6 +5,9 @@ Incluye métodos para manejar claves primarias compuestas.
 
 import requests
 from config import API_BASE_URL
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from config import DB_CONFIG
 
 
 def _parsear_respuesta(respuesta):
@@ -130,16 +133,87 @@ class ApiService:
             return (False, f"Error al eliminar: {ex}")
 
     def ejecutar_procedimiento(self, nombre_proc, parametros):
+        return self.ejecutar_procedimiento_mensaje(nombre_proc, parametros)
+
+    def ejecutar_procedimiento_mensaje(self, nombre_proc, parametros):
+        """Ejecuta un PROCEDURE con INOUT mensaje y retorna (exito, mensaje)."""
+        conn = None
+        cur = None
         try:
-            placeholders = ','.join(['%s'] * len(parametros))
-            query = f"CALL public.{nombre_proc}({placeholders}, NULL)"
-            self.cursor.execute(query, parametros)
-            mensaje = self.cursor.fetchone()
-            self.conn.commit()
-            return True, mensaje[0] if mensaje else "Ejecutado correctamente"
-        except Exception as e:
-            self.conn.rollback()
-            return False, str(e)
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+
+            placeholders = ', '.join(['%s'] * len(parametros))
+            sql = f"CALL public.{nombre_proc}({placeholders}, %s)"
+            cur.execute(sql, [*parametros, None])
+
+            mensaje = "Operacion completada correctamente."
+            try:
+                fila = cur.fetchone()
+                if fila and len(fila) > 0 and fila[0]:
+                    mensaje = str(fila[0])
+            except Exception:
+                # Algunos drivers/configuraciones no retornan el INOUT con fetchone.
+                pass
+
+            conn.commit()
+            return (not self._mensaje_indica_error(mensaje), mensaje)
+        except Exception as ex:
+            if conn:
+                conn.rollback()
+            return False, str(ex)
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+
+    def _mensaje_indica_error(self, mensaje):
+        if not mensaje:
+            return False
+
+        msg = str(mensaje).strip().lower()
+        patrones_error = [
+            'error',
+            'exception',
+            'violates',
+            'duplicate',
+            'null value',
+            'llave',
+            'clave foranea',
+            'no se encontro',
+            'no se encontró',
+            'no existe',
+            'invalid',
+        ]
+        return any(p in msg for p in patrones_error)
+
+    def ejecutar_funcion_json(self, nombre_funcion, parametros):
+        """Ejecuta una FUNCTION que retorna JSON/JSONB y retorna (exito, dict)."""
+        conn = None
+        cur = None
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+
+            placeholders = ', '.join(['%s'] * len(parametros))
+            sql = f"SELECT public.{nombre_funcion}({placeholders}) AS resultado"
+            cur.execute(sql, parametros)
+            fila = cur.fetchone()
+            conn.commit()
+
+            if not fila:
+                return True, {}
+            return True, fila.get('resultado') or {}
+        except Exception as ex:
+            if conn:
+                conn.rollback()
+            return False, {'exito': False, 'mensaje': str(ex)}
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
 
     def listar_vinculaciones_docente(self, docente_id):
         try:

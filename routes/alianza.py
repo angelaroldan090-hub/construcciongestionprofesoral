@@ -170,7 +170,15 @@ def crear():
         'docente': request.form.get('docente', '') or None
     }
     
-    exito, mensaje = api.crear(TABLA, datos)
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('insert_alianza', [
+        aliado_id,
+        departamento_id,
+        datos['fecha_inicio'],
+        datos['fecha_fin'],
+        datos['docente']
+    ])
+    if not exito:
+        exito, mensaje = api.crear(TABLA, datos)
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('alianza.index'))
 
@@ -194,17 +202,23 @@ def actualizar():
         'docente': request.form.get('docente', '') or None
     }
 
-    # Para claves compuestas, usar DELETE + CREATE
-    exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('update_alianza', [
+        aliado_id,
+        departamento_id,
+        datos['fecha_inicio'],
+        datos['fecha_fin'],
+        datos['docente']
+    ])
 
-    if exito_eliminar:
-        exito_crear, mensaje_crear = api.crear(TABLA, datos)
-        if exito_crear:
-            flash('Alianza actualizada exitosamente.', 'success')
+    if not exito:
+        # Fallback para APIs antiguas sin SP
+        exito_eliminar, mensaje_eliminar = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
+        if exito_eliminar:
+            exito, mensaje = api.crear(TABLA, datos)
         else:
-            flash(f'Error al recrear: {mensaje_crear}', 'danger')
-    else:
-        flash(f'Error al actualizar: {mensaje_eliminar}', 'danger')
+            exito, mensaje = False, mensaje_eliminar
+
+    flash(mensaje, 'success' if exito else 'danger')
 
     return redirect(url_for('alianza.index'))
 
@@ -220,6 +234,8 @@ def eliminar():
         flash('ID de aliado o departamento inválido.', 'danger')
         return redirect(url_for('alianza.index'))
     
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
+    exito, mensaje = api.ejecutar_procedimiento_mensaje('delete_alianza', [aliado_id, departamento_id])
+    if not exito:
+        exito, mensaje = api.eliminar_compuesta(TABLA, ['aliado', 'departamento'], [aliado_id, departamento_id])
     flash(mensaje, 'success' if exito else 'danger')
     return redirect(url_for('alianza.index'))

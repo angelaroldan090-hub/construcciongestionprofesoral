@@ -19,6 +19,7 @@ from routes.alianza import bp as alianza_bp
 from routes.apoyo_profesoral import bp as apoyo_profesoral_bp
 from routes.beca import bp as beca_bp
 from routes.docente_departamento import bp as docente_departamento_bp
+from routes.docentes_estudios import bp as docentes_estudios_bp
 from routes.evaluacion_docente import bp as evaluacion_docente_bp
 
 # Registrar blueprints
@@ -32,6 +33,7 @@ app.register_blueprint(alianza_bp)
 app.register_blueprint(apoyo_profesoral_bp)
 app.register_blueprint(beca_bp)
 app.register_blueprint(docente_departamento_bp)
+app.register_blueprint(docentes_estudios_bp)
 app.register_blueprint(evaluacion_docente_bp)
 
 if __name__ == '__main__':

@@ -34,6 +34,12 @@
                 </div>
 
                 <div class="card-body">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{{ url_for('alianza.index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-handshake me-1"></i>Ir a Gestión de Alianzas
+                        </a>
+                    </div>
+
                     {% if busqueda %}
                     <div class="alert alert-info alert-sm mb-3">
                         <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{
@@ -107,8 +113,6 @@
                 <form method="POST"
                     action="{{ url_for('aliado.actualizar') if editando else url_for('aliado.crear') }}">
                     <div class="modal-body">
-                        <input type="hidden" name="nit" value="{{ registro.nit if registro else '' }}">
-
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
