@@ -47,7 +47,11 @@ class ApiService:
             respuesta = requests.post(url, json=datos, params=params)
             contenido = _parsear_respuesta(respuesta)
             mensaje = contenido.get("mensaje", "Operación completada.")
+            detalle = contenido.get("detalle")
+            if detalle:
+                mensaje = f"{mensaje} {detalle}"
             return (respuesta.ok, mensaje)
+
         except requests.RequestException as ex:
             return (False, f"Error de conexion: {ex}")
 
@@ -152,3 +156,5 @@ class ApiService:
         except Exception as e:
             print(f"Error al listar alianzas de aliado: {e}")
             return []
+    
+    

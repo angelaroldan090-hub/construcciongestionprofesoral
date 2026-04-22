@@ -185,17 +185,46 @@ def obtener_vinculaciones(docente_id):
 
 @bp.route('/api/docente_vinculacion/crear', methods=['POST'])
 def crear_vinculacion():
-    data = request.json
-    datos = {
-        'docente': data.get('docente'),
-        'departamento': data.get('departamento'),
-        'dedicacion': data.get('dedicacion'),
-        'modalidad': data.get('modalidad'),
-        'fecha_ingreso': data.get('fecha_ingreso'),
-        'fecha_salida': data.get('fecha_salida')
-    }
-    exito, mensaje = api.crear('docente_departamento', datos)
-    return jsonify({'success': exito, 'message': mensaje})
+    try:
+        data = request.json
+        
+        # Validar datos requeridos
+        if not data.get('docente'):
+            return jsonify({'success': False, 'message': 'Docente es requerido'}), 400
+        if not data.get('departamento'):
+            return jsonify({'success': False, 'message': 'Departamento es requerido'}), 400
+        if not data.get('fecha_ingreso'):
+            return jsonify({'success': False, 'message': 'Fecha de ingreso es requerida'}), 400
+        
+        docente_id = int(data.get('docente'))
+        departamento_id = int(data.get('departamento'))
+        
+        # Validar duplicados antes de enviar al backend
+        existentes = api.listar('docente_departamento')
+        if any(
+            int(r.get('docente', -1)) == docente_id and int(r.get('departamento', -1)) == departamento_id
+            for r in existentes
+        ):
+            return jsonify({'success': False, 'message': 'Ya existe una vinculación para este docente y departamento.'}), 409
+        
+        datos = {
+            'docente': docente_id,
+            'departamento': departamento_id,
+            'dedicacion': data.get('dedicacion', ''),
+            'modalidad': data.get('modalidad', ''),
+            'fecha_ingreso': data.get('fecha_ingreso'),
+            'fecha_salida': data.get('fecha_salida') or None
+        }
+        
+        print(f"[DEBUG] Creando vinculación con datos: {datos}")
+        exito, mensaje = api.crear('docente_departamento', datos)
+        print(f"[DEBUG] Resultado: exito={exito}, mensaje={mensaje}")
+        
+        return jsonify({'success': exito, 'message': mensaje})
+    except Exception as e:
+        error_msg = f"Error al crear vinculación: {str(e)}"
+        print(f"[ERROR] {error_msg}")
+        return jsonify({'success': False, 'message': error_msg}), 500
 
 @bp.route('/api/docente_vinculacion/eliminar', methods=['POST'])
 def eliminar_vinculacion():
