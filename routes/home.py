@@ -1,11 +1,11 @@
-"""
-home.py - Blueprint para la página de inicio.
-"""
-
 from flask import Blueprint, render_template
 
-bp = Blueprint('home', __name__)
+home_bp = Blueprint('home', __name__)
 
-@bp.route('/')
+@home_bp.route('/')
 def index():
+    return render_template('pages/home.html')
+
+@home_bp.route('/home')
+def home():
     return render_template('pages/home.html')

@@ -1,145 +1,42 @@
-"""
-red.py - Blueprint para la tabla Red.
-"""
+from flask import Blueprint, render_template, request, redirect, url_for
+from services.api_service import APIService
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from services.api_service import ApiService
+red_bp = Blueprint('red', __name__)
+api_service = APIService()
 
-bp = Blueprint('red', __name__)
-api = ApiService()
+@red_bp.route('/')
+def listar():
+    redes = api_service.get_all('red')
+    return render_template('pages/red.html', redes=redes)
 
-TABLA = 'red'
-CLAVE = 'id'  # Se ajusta automáticamente segun lo que devuelva la API
-
-
-@bp.route('/red')
-def index():
-    limite = request.args.get('limite', type=int)
-    accion = request.args.get('accion', '')
-    valor_clave = request.args.get('clave', '')
-
-    registros = api.listar(TABLA, limite)
-
-    # ── DEBUG: imprime las claves del primer registro para ver que nombre usa la API ──
-    if registros:
-        print(">>> CLAVES DEL REGISTRO:", list(registros[0].keys()))
-        print(">>> PRIMER REGISTRO COMPLETO:", registros[0])
-    # ─────────────────────────────────────────────────────────────────────────────────
-
-    clave_real = CLAVE
-    if registros and 'id' in registros[0] and 'idr' not in registros[0]:
-        clave_real = 'id'
-
-    mostrar_formulario = accion in ('nuevo', 'editar')
-    editando = accion == 'editar'
-
-    registro = None
-    if editando and valor_clave:
-        registro = next(
-            (r for r in registros if str(r.get(clave_real)) == valor_clave),
-            None
-        )
-
-    return render_template('pages/red.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        clave_real=clave_real
-    )
-
-
-@bp.route('/red/buscar')
-def buscar():
-    query = request.args.get('q', '')
-    limite = request.args.get('limite', type=int)
-    
-    registros = api.listar(TABLA, limite)
-    
-    if query:
-        query_lower = query.lower()
-        registros = [
-            r for r in registros 
-            if query_lower in r.get('nombre', '').lower()
-            or query_lower in r.get('pais', '').lower()
-            or (r.get('url') and query_lower in r.get('url', '').lower())
-        ]
-    
-    return render_template('pages/red.html',
-        registros=registros,
-        mostrar_formulario=False,
-        editando=False,
-        registro=None,
-        limite=limite,
-        clave_real='id',
-        busqueda=query
-    )
-
-
-@bp.route('/red/sugerencias')
-def sugerencias():
-    query = request.args.get('q', '')
-    limite = request.args.get('limite', 10)
-    
-    registros = api.listar(TABLA)
-    
-    if query:
-        query_lower = query.lower()
-        resultados = []
-        for r in registros:
-            if (query_lower in r.get('nombre', '').lower() or
-                query_lower in r.get('pais', '').lower()):
-                
-                # Determinar la clave correcta
-                clave_valor = r.get('id') or r.get('idr')
-                
-                resultados.append({
-                    'id': clave_valor,
-                    'nombre': r.get('nombre'),
-                    'pais': r.get('pais'),
-                    'url': r.get('url'),
-                    'texto': f"{r.get('nombre')} ({r.get('pais')})"
-                })
-        return jsonify(resultados[:limite])
-    
-    return jsonify([])
-
-
-@bp.route('/red/crear', methods=['POST'])
+@red_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
-    datos = {
-        'nombre': request.form.get('nombre', ''),
-        'url':    request.form.get('url', ''),
-        'pais':   request.form.get('pais', '')
-    }
-    print(">>> CREAR - datos:", datos)
-    exito, mensaje = api.crear(TABLA, datos)
-    print(">>> RESPUESTA:", exito, mensaje)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('red.index'))
+    if request.method == 'POST':
+        data = {
+            'idr': request.form['idr'],
+            'nombre': request.form['nombre'],
+            'url': request.form['url'],
+            'pais': request.form['pais']
+        }
+        api_service.create('red', data)
+        return redirect(url_for('red.listar'))
+    return render_template('pages/red_form.html')
 
+@red_bp.route('/editar/<int:idr>', methods=['GET', 'POST'])
+def editar(idr):
+    if request.method == 'POST':
+        data = {
+            'nombre': request.form['nombre'],
+            'url': request.form['url'],
+            'pais': request.form['pais']
+        }
+        api_service.update('red', idr, data)
+        return redirect(url_for('red.listar'))
+    
+    red = api_service.get_one('red', idr)
+    return render_template('pages/red_form.html', red=red)
 
-@bp.route('/red/actualizar', methods=['POST'])
-def actualizar():
-    valor = request.form.get('idr', '') or request.form.get('id', '')
-    datos = {
-        'nombre': request.form.get('nombre', ''),
-        'url':    request.form.get('url', ''),
-        'pais':   request.form.get('pais', '')
-    }
-    print(">>> ACTUALIZAR - clave:", valor, "datos:", datos)
-    exito, mensaje = api.actualizar(TABLA, CLAVE, valor, datos)
-    print(">>> RESPUESTA:", exito, mensaje)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('red.index'))
-
-
-@bp.route('/red/eliminar', methods=['POST'])
-def eliminar():
-    valor = request.form.get('idr', '') or request.form.get('id', '')
-    print(">>> ELIMINAR - clave:", valor)
-    exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-    print(">>> RESPUESTA:", exito, mensaje)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('red.index'))
+@red_bp.route('/eliminar/<int:idr>')
+def eliminar(idr):
+    api_service.delete('red', idr)
+    return redirect(url_for('red.listar'))
