@@ -1,86 +1,47 @@
-"""
-beca.py - Blueprint para la tabla Beca (depende de estudios_realizados)
-"""
+from flask import Blueprint, render_template, request, redirect, url_for
+from services.api_service import APIService
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from services.api_service import ApiService
+beca_bp = Blueprint('beca', __name__)
+api_service = APIService()
 
-bp = Blueprint('beca', __name__)
-api = ApiService()
+@beca_bp.route('/')
+def listar():
+    becas = api_service.get_all('beca')
+    return render_template('pages/beca.html', becas=becas)
 
-TABLA = 'beca'
-CLAVE = 'estudios'
-
-@bp.route('/beca')
-def index():
-    limite = request.args.get('limite', type=int)
-    accion = request.args.get('accion', '')
-    valor_clave = request.args.get('clave', '')
-    
-    registros = api.listar(TABLA, limite)
-    
-    mostrar_formulario = accion in ('nuevo', 'editar')
-    editando = accion == 'editar'
-    
-    registro = None
-    if editando and valor_clave:
-        registro = next(
-            (r for r in registros if str(r.get(CLAVE)) == valor_clave),
-            None
-        )
-    
-    # Obtener datos para selects
-    estudios = api.listar('estudios_realizados')
-    estudios_por_id = {str(e.get('id')): e for e in estudios}
-
-    # Unir cada beca con el estudio correspondiente para mostrar el título y la universidad
-    for registro_beca in registros:
-        estudio_id = str(registro_beca.get('estudios') or registro_beca.get('estudio') or '')
-        estudio_relacionado = estudios_por_id.get(estudio_id)
-        if estudio_relacionado:
-            registro_beca['estudio_titulo'] = estudio_relacionado.get('titulo')
-            registro_beca['estudio_universidad'] = estudio_relacionado.get('universidad')
-
-    return render_template('pages/beca.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        estudios=estudios
-    )
-
-@bp.route('/beca/crear', methods=['POST'])
+@beca_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
-    datos = {
-        'estudios': request.form.get('estudios', ''),
-        'tipo': request.form.get('tipo', ''),
-        'institucion': request.form.get('institucion', ''),
-        'fecha_inicio': request.form.get('fecha_inicio', ''),
-        'fecha_fin': request.form.get('fecha_fin', '') or None
-    }
+    if request.method == 'POST':
+        data = {
+            'estudios': request.form['estudios'],
+            'tipo': request.form['tipo'],
+            'institucion': request.form['institucion'],
+            'fecha_inicio': request.form['fecha_inicio'],
+            'fecha_fin': request.form.get('fecha_fin', '')
+        }
+        api_service.create('beca', data)
+        return redirect(url_for('beca.listar'))
     
-    exito, mensaje = api.crear(TABLA, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('beca.index'))
+    estudios = api_service.get_all('estudios_realizados')
+    return render_template('pages/beca_form.html', estudios=estudios)
 
-@bp.route('/beca/actualizar', methods=['POST'])
-def actualizar():
-    valor = request.form.get('estudios', '')
-    datos = {
-        'tipo': request.form.get('tipo', ''),
-        'institucion': request.form.get('institucion', ''),
-        'fecha_inicio': request.form.get('fecha_inicio', ''),
-        'fecha_fin': request.form.get('fecha_fin', '') or None
-    }
+@beca_bp.route('/editar/<int:estudios>', methods=['GET', 'POST'])
+def editar(estudios):
+    if request.method == 'POST':
+        data = {
+            'tipo': request.form['tipo'],
+            'institucion': request.form['institucion'],
+            'fecha_inicio': request.form['fecha_inicio'],
+            'fecha_fin': request.form.get('fecha_fin', '')
+        }
+        api_service.update('beca', estudios, data)
+        return redirect(url_for('beca.listar'))
     
-    exito, mensaje = api.actualizar(TABLA, CLAVE, valor, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('beca.index'))
+    beca = api_service.get_one('beca', estudios)
+    estudios_list = api_service.get_all('estudios_realizados')
+    return render_template('pages/beca_form.html', beca=beca, estudios=estudios_list)
 
-@bp.route('/beca/eliminar', methods=['POST'])
-def eliminar():
-    valor = request.form.get('estudios', '')
-    exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('beca.index'))
+@beca_bp.route('/eliminar/<int:estudios>')
+def eliminar(estudios):
+    api_service.delete('beca', estudios)
+    return redirect(url_for('beca.listar'))

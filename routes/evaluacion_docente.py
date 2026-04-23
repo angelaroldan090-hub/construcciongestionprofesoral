@@ -1,74 +1,44 @@
-"""
-evaluacion_docente.py - Blueprint para la tabla Evaluacion Docente (depende de docente)
-"""
+from flask import Blueprint, render_template, request, redirect, url_for
+from services.api_service import APIService
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from services.api_service import ApiService
+evaluacion_bp = Blueprint('evaluacion', __name__)
+api_service = APIService()
 
-bp = Blueprint('evaluacion_docente', __name__)
-api = ApiService()
+@evaluacion_bp.route('/')
+def listar():
+    evaluaciones = api_service.get_all('evaluacion_docente')
+    return render_template('pages/evaluacion_docente.html', evaluaciones=evaluaciones)
 
-TABLA = 'evaluacion_docente'
-CLAVE = 'id'
-
-@bp.route('/evaluacion_docente')
-def index():
-    limite = request.args.get('limite', type=int)
-    accion = request.args.get('accion', '')
-    valor_clave = request.args.get('clave', '')
-    
-    registros = api.listar(TABLA, limite)
-    
-    mostrar_formulario = accion in ('nuevo', 'editar')
-    editando = accion == 'editar'
-    
-    registro = None
-    if editando and valor_clave:
-        registro = next(
-            (r for r in registros if str(r.get(CLAVE)) == valor_clave),
-            None
-        )
-    
-    # Obtener datos para selects
-    docentes = api.listar('docente')
-    
-    return render_template('pages/evaluacion_docente.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        docentes=docentes
-    )
-
-@bp.route('/evaluacion_docente/crear', methods=['POST'])
+@evaluacion_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
-    datos = {
-        'docente': request.form.get('docente', ''),
-        'calificacion': request.form.get('calificacion', ''),
-        'semestre': request.form.get('semestre', '')
-    }
+    if request.method == 'POST':
+        data = {
+            'calificacion': request.form['calificacion'],
+            'semestre': request.form['semestre'],
+            'docente': request.form['docente']
+        }
+        api_service.create('evaluacion_docente', data)
+        return redirect(url_for('evaluacion.listar'))
     
-    exito, mensaje = api.crear(TABLA, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('evaluacion_docente.index'))
+    docentes = api_service.get_all('docente')
+    return render_template('pages/evaluacion_docente_form.html', docentes=docentes)
 
-@bp.route('/evaluacion_docente/actualizar', methods=['POST'])
-def actualizar():
-    valor = request.form.get('id', '')
-    datos = {
-        'docente': request.form.get('docente', ''),
-        'calificacion': request.form.get('calificacion', ''),
-        'semestre': request.form.get('semestre', '')
-    }
+@evaluacion_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
+def editar(id):
+    if request.method == 'POST':
+        data = {
+            'calificacion': request.form['calificacion'],
+            'semestre': request.form['semestre'],
+            'docente': request.form['docente']
+        }
+        api_service.update('evaluacion_docente', id, data)
+        return redirect(url_for('evaluacion.listar'))
     
-    exito, mensaje = api.actualizar(TABLA, CLAVE, valor, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('evaluacion_docente.index'))
+    evaluacion = api_service.get_one('evaluacion_docente', id)
+    docentes = api_service.get_all('docente')
+    return render_template('pages/evaluacion_docente_form.html', evaluacion=evaluacion, docentes=docentes)
 
-@bp.route('/evaluacion_docente/eliminar', methods=['POST'])
-def eliminar():
-    valor = request.form.get('id', '')
-    exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('evaluacion_docente.index'))
+@evaluacion_bp.route('/eliminar/<int:id>')
+def eliminar(id):
+    api_service.delete('evaluacion_docente', id)
+    return redirect(url_for('evaluacion.listar'))
