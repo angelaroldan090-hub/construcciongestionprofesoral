@@ -1,84 +1,45 @@
-"""
-apoyo_profesoral.py - Blueprint para la tabla Apoyo Profesoral (depende de estudios_realizados)
-"""
+from flask import Blueprint, render_template, request, redirect, url_for
+from services.api_service import APIService
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from services.api_service import ApiService
+apoyo_bp = Blueprint('apoyo', __name__)
+api_service = APIService()
 
-bp = Blueprint('apoyo_profesoral', __name__)
-api = ApiService()
+@apoyo_bp.route('/')
+def listar():
+    apoyos = api_service.get_all('apoyo_profesoral')
+    return render_template('pages/apoyo_profesoral.html', apoyos=apoyos)
 
-TABLA = 'apoyo_profesoral'
-CLAVE = 'estudios'
-
-@bp.route('/apoyo_profesoral')
-def index():
-    limite = request.args.get('limite', type=int)
-    accion = request.args.get('accion', '')
-    valor_clave = request.args.get('clave', '')
-    
-    registros = api.listar(TABLA, limite)
-    
-    mostrar_formulario = accion in ('nuevo', 'editar')
-    editando = accion == 'editar'
-    
-    registro = None
-    if editando and valor_clave:
-        registro = next(
-            (r for r in registros if str(r.get(CLAVE)) == valor_clave),
-            None
-        )
-    
-    # Obtener datos para selects
-    estudios = api.listar('estudios_realizados')
-    estudios_por_id = {str(e.get('id')): e for e in estudios}
-
-    # Unir el registro de apoyo con el estudio correspondiente para mostrar el título correctamente
-    for registro_apoyo in registros:
-        estudio_id = str(registro_apoyo.get('estudios') or registro_apoyo.get('estudio') or '')
-        estudio_relacionado = estudios_por_id.get(estudio_id)
-        if estudio_relacionado:
-            registro_apoyo['estudio_titulo'] = estudio_relacionado.get('titulo')
-            registro_apoyo['estudio_universidad'] = estudio_relacionado.get('universidad')
-
-    return render_template('pages/apoyo_profesoral.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        estudios=estudios
-    )
-
-@bp.route('/apoyo_profesoral/crear', methods=['POST'])
+@apoyo_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
-    datos = {
-        'estudios': request.form.get('estudios', ''),
-        'con_apoyo': request.form.get('con_apoyo') == 'true',
-        'institucion': request.form.get('institucion', ''),
-        'tipo': request.form.get('tipo', '')
-    }
+    if request.method == 'POST':
+        data = {
+            'estudios': request.form['estudios'],
+            'con_apoyo': request.form['con_apoyo'],
+            'institucion': request.form['institucion'],
+            'tipo': request.form['tipo']
+        }
+        api_service.create('apoyo_profesoral', data)
+        return redirect(url_for('apoyo.listar'))
     
-    exito, mensaje = api.crear(TABLA, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('apoyo_profesoral.index'))
+    estudios = api_service.get_all('estudios_realizados')
+    return render_template('pages/apoyo_profesoral_form.html', estudios=estudios)
 
-@bp.route('/apoyo_profesoral/actualizar', methods=['POST'])
-def actualizar():
-    valor = request.form.get('estudios', '')
-    datos = {
-        'con_apoyo': request.form.get('con_apoyo') == 'true',
-        'institucion': request.form.get('institucion', ''),
-        'tipo': request.form.get('tipo', '')
-    }
+@apoyo_bp.route('/editar/<int:estudios>', methods=['GET', 'POST'])
+def editar(estudios):
+    if request.method == 'POST':
+        data = {
+            'con_apoyo': request.form['con_apoyo'],
+            'institucion': request.form['institucion'],
+            'tipo': request.form['tipo']
+        }
+        api_service.update('apoyo_profesoral', estudios, data)
+        return redirect(url_for('apoyo.listar'))
     
-    exito, mensaje = api.actualizar(TABLA, CLAVE, valor, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('apoyo_profesoral.index'))
+    apoyo = api_service.get_one('apoyo_profesoral', estudios)
+    estudios_list = api_service.get_all('estudios_realizados')
+    return render_template('pages/apoyo_profesoral_form.html', apoyo=apoyo, estudios=estudios_list)
 
-@bp.route('/apoyo_profesoral/eliminar', methods=['POST'])
-def eliminar():
-    valor = request.form.get('estudios', '')
-    exito, mensaje = api.eliminar(TABLA, CLAVE, valor)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('apoyo_profesoral.index'))
+@apoyo_bp.route('/eliminar/<int:estudios>')
+def eliminar(estudios):
+    api_service.delete('apoyo_profesoral', estudios)
+    return redirect(url_for('apoyo.listar'))
