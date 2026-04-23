@@ -9,6 +9,7 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
     # Importar blueprints
+from routes.api_proxy import api_proxy_bp
 from routes.home import home_bp
 from routes.docente import docente_bp
 from routes.estudios_realizados import estudios_bp
@@ -24,8 +25,11 @@ from routes.experiencia import experiencia_bp
 from routes.red_docente import red_docente_bp
 from routes.apoyo_profesoral import apoyo_bp
 from routes.beca import beca_bp
+from routes.docente_departamento import docente_departamento_bp
+from routes.estudio_ac import estudio_ac_bp
     
     # Registrar blueprints
+app.register_blueprint(api_proxy_bp)
 app.register_blueprint(home_bp)
 app.register_blueprint(docente_bp, url_prefix='/docente')
 app.register_blueprint(estudios_bp, url_prefix='/estudios')
@@ -41,6 +45,8 @@ app.register_blueprint(experiencia_bp, url_prefix='/experiencia')
 app.register_blueprint(red_docente_bp, url_prefix='/red_docente')
 app.register_blueprint(apoyo_bp, url_prefix='/apoyo')
 app.register_blueprint(beca_bp, url_prefix='/beca')
+app.register_blueprint(docente_departamento_bp, url_prefix='/docente_departamento')
+app.register_blueprint(estudio_ac_bp, url_prefix='/estudio_ac')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5100)
