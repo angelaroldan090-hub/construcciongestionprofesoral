@@ -70,6 +70,11 @@
 </div>
 
 <script>
+const _reconocimientosMap = {};
+{{ reconocimientos|tojson }}.forEach(r => { _reconocimientosMap[String(r.id)] = r; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
 function mostrarFormulario() {
     document.getElementById('formularioReconocimiento').style.display='block';
     document.getElementById('formTitulo').innerText='Nuevo Reconocimiento';
@@ -82,17 +87,17 @@ function ocultarFormulario() {
 }
 
 function editarReconocimiento(id) {
-    fetch(`/api/reconocimiento/${id}`).then(r=>r.json()).then(data=>{
-        document.getElementById('editId').value=data.id;
-        document.getElementById('docente').value=data.docente;
-        document.getElementById('nombre').value=data.nombre;
-        document.getElementById('tipo').value=data.tipo;
-        document.getElementById('ambito').value=data.ambito;
-        document.getElementById('institucion').value=data.institucion;
-        document.getElementById('fecha').value=data.fecha;
-        document.getElementById('formTitulo').innerText='Editar Reconocimiento';
-        document.getElementById('formularioReconocimiento').style.display='block';
-    });
+    const data = _reconocimientosMap[String(id)];
+    if (!data) { alert('No se encontró el reconocimiento.'); return; }
+    document.getElementById('editId').value=data.id;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('nombre').value=data.nombre;
+    document.getElementById('tipo').value=data.tipo;
+    document.getElementById('ambito').value=data.ambito;
+    document.getElementById('institucion').value=data.institucion;
+    document.getElementById('fecha').value=_fecha(data.fecha);
+    document.getElementById('formTitulo').innerText='Editar Reconocimiento';
+    document.getElementById('formularioReconocimiento').style.display='block';
 }
 
 function eliminarReconocimiento(id) {

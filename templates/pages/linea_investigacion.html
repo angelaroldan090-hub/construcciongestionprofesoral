@@ -54,6 +54,9 @@
 </div>
 
 <script>
+const _lineasMap = {};
+{{ lineas|tojson }}.forEach(l => { _lineasMap[String(l.id)] = l; });
+
 function mostrarFormulario() {
     document.getElementById('formularioLinea').style.display = 'block';
     document.getElementById('formTitulo').innerText = 'Nueva Línea de Investigación';
@@ -66,15 +69,13 @@ function ocultarFormulario() {
 }
 
 function editarLinea(id) {
-    fetch(`/api/linea_investigacion/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editId').value = data.id;
-            document.getElementById('nombre').value = data.nombre;
-            document.getElementById('descripcion').value = data.descripcion;
-            document.getElementById('formTitulo').innerText = 'Editar Línea de Investigación';
-            document.getElementById('formularioLinea').style.display = 'block';
-        });
+    const data = _lineasMap[String(id)];
+    if (!data) { alert('No se encontró la línea.'); return; }
+    document.getElementById('editId').value = data.id;
+    document.getElementById('nombre').value = data.nombre;
+    document.getElementById('descripcion').value = data.descripcion;
+    document.getElementById('formTitulo').innerText = 'Editar Línea de Investigación';
+    document.getElementById('formularioLinea').style.display = 'block';
 }
 
 function eliminarLinea(id) {

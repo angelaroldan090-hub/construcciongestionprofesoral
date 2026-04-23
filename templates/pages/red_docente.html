@@ -73,6 +73,12 @@
 </div>
 
 <script>
+// Lookup de relaciones por clave compuesta
+const _redDocenteMap = {};
+{{ redes_docentes|tojson }}.forEach(r => { _redDocenteMap[`${r.red}_${r.docente}`] = r; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
 function mostrarFormulario() {
     document.getElementById('formularioRedDocente').style.display='block';
     document.getElementById('formTitulo').innerText='Nueva Asignación';
@@ -86,17 +92,17 @@ function ocultarFormulario() {
 }
 
 function editarRedDocente(red, docente) {
-    fetch(`/api/red_docente/${red}/${docente}`).then(r=>r.json()).then(data=>{
-        document.getElementById('editRed').value=data.red;
-        document.getElementById('editDocente').value=data.docente;
-        document.getElementById('red').value=data.red;
-        document.getElementById('docente').value=data.docente;
-        document.getElementById('fecha_inicio').value=data.fecha_inicio;
-        document.getElementById('fecha_fin').value=data.fecha_fin||'';
-        document.getElementById('act_destacadas').value=data.act_destacadas;
-        document.getElementById('formTitulo').innerText='Editar Asignación';
-        document.getElementById('formularioRedDocente').style.display='block';
-    });
+    const data = _redDocenteMap[`${red}_${docente}`];
+    if (!data) { alert('No se encontró la relación.'); return; }
+    document.getElementById('editRed').value=data.red;
+    document.getElementById('editDocente').value=data.docente;
+    document.getElementById('red').value=data.red;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('fecha_inicio').value=_fecha(data.fecha_inicio);
+    document.getElementById('fecha_fin').value=data.fecha_fin||'';
+    document.getElementById('act_destacadas').value=data.act_destacadas;
+    document.getElementById('formTitulo').innerText='Editar Asignación';
+    document.getElementById('formularioRedDocente').style.display='block';
 }
 
 function eliminarRedDocente(red, docente) {
