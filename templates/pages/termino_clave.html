@@ -53,6 +53,9 @@
 </div>
 
 <script>
+const _terminosMap = {};
+{{ terminos|tojson }}.forEach(t => { _terminosMap[String(t.termino)] = t; });
+
 function mostrarFormulario() {
     document.getElementById('formularioTermino').style.display = 'block';
     document.getElementById('formTitulo').innerText = 'Nuevo Término Clave';
@@ -65,15 +68,13 @@ function ocultarFormulario() {
 }
 
 function editarTermino(termino) {
-    fetch(`/api/termino_clave/${termino}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editTermino').value = data.termino;
-            document.getElementById('termino').value = data.termino;
-            document.getElementById('termino_ingles').value = data.termino_ingles || '';
-            document.getElementById('formTitulo').innerText = 'Editar Término Clave';
-            document.getElementById('formularioTermino').style.display = 'block';
-        });
+    const data = _terminosMap[String(termino)];
+    if (!data) { alert('No se encontró el término.'); return; }
+    document.getElementById('editTermino').value = data.termino;
+    document.getElementById('termino').value = data.termino;
+    document.getElementById('termino_ingles').value = data.termino_ingles || '';
+    document.getElementById('formTitulo').innerText = 'Editar Término Clave';
+    document.getElementById('formularioTermino').style.display = 'block';
 }
 
 function eliminarTermino(termino) {

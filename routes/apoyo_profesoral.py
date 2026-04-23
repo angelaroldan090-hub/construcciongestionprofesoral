@@ -6,8 +6,9 @@ api_service = APIService()
 
 @apoyo_bp.route('/')
 def listar():
-    apoyos = api_service.get_all('apoyo_profesoral')
-    return render_template('pages/apoyo_profesoral.html', apoyos=apoyos)
+    apoyos  = api_service.get_all('apoyo_profesoral')
+    estudios = api_service.get_all('estudios_realizados')
+    return render_template('pages/apoyo_profesoral.html', apoyos=apoyos, estudios=estudios)
 
 @apoyo_bp.route('/crear', methods=['GET', 'POST'])
 def crear():

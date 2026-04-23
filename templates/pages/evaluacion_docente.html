@@ -64,6 +64,9 @@
 </div>
 
 <script>
+const _evaluacionesMap = {};
+{{ evaluaciones|tojson }}.forEach(e => { _evaluacionesMap[String(e.id)] = e; });
+
 function mostrarFormulario() {
     document.getElementById('formularioEvaluacion').style.display='block';
     document.getElementById('formTitulo').innerText='Nueva Evaluación';
@@ -76,14 +79,14 @@ function ocultarFormulario() {
 }
 
 function editarEvaluacion(id) {
-    fetch(`/api/evaluacion_docente/${id}`).then(r=>r.json()).then(data=>{
-        document.getElementById('editId').value=data.id;
-        document.getElementById('docente').value=data.docente;
-        document.getElementById('calificacion').value=data.calificacion;
-        document.getElementById('semestre').value=data.semestre;
-        document.getElementById('formTitulo').innerText='Editar Evaluación';
-        document.getElementById('formularioEvaluacion').style.display='block';
-    });
+    const data = _evaluacionesMap[String(id)];
+    if (!data) { alert('No se encontró la evaluación.'); return; }
+    document.getElementById('editId').value=data.id;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('calificacion').value=data.calificacion;
+    document.getElementById('semestre').value=data.semestre;
+    document.getElementById('formTitulo').innerText='Editar Evaluación';
+    document.getElementById('formularioEvaluacion').style.display='block';
 }
 
 function eliminarEvaluacion(id) {

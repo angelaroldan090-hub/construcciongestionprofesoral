@@ -128,6 +128,12 @@
 const docentes = {{ docentes|tojson }};
 const programas = {{ programas|tojson }};
 
+// Lookup de relaciones por clave compuesta
+const _relacionesMap = {};
+{{ relaciones|tojson }}.forEach(r => { _relacionesMap[`${r.docente}_${r.departamento}`] = r; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
 function mostrarFormulario() {
     document.getElementById('formularioRelacion').style.display = 'block';
     document.getElementById('formTitulo').innerText = 'Nueva Asignación Docente-Departamento';
@@ -143,22 +149,20 @@ function ocultarFormulario() {
 }
 
 function editarRelacion(docente, departamento) {
-    fetch(`/api/docente_departamento/${docente}/${departamento}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editDocente').value = data.docente;
-            document.getElementById('editDepartamento').value = data.departamento;
-            document.getElementById('docente').value = data.docente;
-            document.getElementById('departamento').value = data.departamento;
-            document.getElementById('dedicacion').value = data.dedicacion;
-            document.getElementById('modalidad').value = data.modalidad;
-            document.getElementById('fecha_ingreso').value = data.fecha_ingreso;
-            document.getElementById('fecha_salida').value = data.fecha_salida || '';
-            document.getElementById('formTitulo').innerText = 'Editar Asignación';
-            document.getElementById('formularioRelacion').style.display = 'block';
-            document.getElementById('docente').disabled = true;
-            document.getElementById('departamento').disabled = true;
-        });
+    const data = _relacionesMap[`${docente}_${departamento}`];
+    if (!data) { alert('No se encontró la relación.'); return; }
+    document.getElementById('editDocente').value = data.docente;
+    document.getElementById('editDepartamento').value = data.departamento;
+    document.getElementById('docente').value = data.docente;
+    document.getElementById('departamento').value = data.departamento;
+    document.getElementById('dedicacion').value = data.dedicacion;
+    document.getElementById('modalidad').value = data.modalidad;
+    document.getElementById('fecha_ingreso').value = _fecha(data.fecha_ingreso);
+    document.getElementById('fecha_salida').value = _fecha(data.fecha_salida) || '';
+    document.getElementById('formTitulo').innerText = 'Editar Asignación';
+    document.getElementById('formularioRelacion').style.display = 'block';
+    document.getElementById('docente').disabled = true;
+    document.getElementById('departamento').disabled = true;
 }
 
 function eliminarRelacion(docente, departamento) {

@@ -7,7 +7,8 @@ api_service = APIService()
 @evaluacion_bp.route('/')
 def listar():
     evaluaciones = api_service.get_all('evaluacion_docente')
-    return render_template('pages/evaluacion_docente.html', evaluaciones=evaluaciones)
+    docentes = api_service.get_all('docente')
+    return render_template('pages/evaluacion_docente.html', evaluaciones=evaluaciones, docentes=docentes)
 
 @evaluacion_bp.route('/crear', methods=['GET', 'POST'])
 def crear():

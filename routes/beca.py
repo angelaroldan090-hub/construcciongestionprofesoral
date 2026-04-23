@@ -6,8 +6,9 @@ api_service = APIService()
 
 @beca_bp.route('/')
 def listar():
-    becas = api_service.get_all('beca')
-    return render_template('pages/beca.html', becas=becas)
+    becas    = api_service.get_all('beca')
+    estudios = api_service.get_all('estudios_realizados')
+    return render_template('pages/beca.html', becas=becas, estudios=estudios)
 
 @beca_bp.route('/crear', methods=['GET', 'POST'])
 def crear():

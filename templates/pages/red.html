@@ -51,6 +51,9 @@
 </div>
 
 <script>
+const _redesMap = {};
+{{ redes|tojson }}.forEach(r => { _redesMap[String(r.idr)] = r; });
+
 function mostrarFormulario() {
     document.getElementById('formularioRed').style.display='block';
     document.getElementById('formTitulo').innerText='Nueva Red';
@@ -63,15 +66,15 @@ function ocultarFormulario() {
 }
 
 function editarRed(idr) {
-    fetch(`/api/red/${idr}`).then(r=>r.json()).then(data=>{
-        document.getElementById('editId').value=data.idr;
-        document.getElementById('idr').value=data.idr;
-        document.getElementById('nombre').value=data.nombre;
-        document.getElementById('url').value=data.url;
-        document.getElementById('pais').value=data.pais;
-        document.getElementById('formTitulo').innerText='Editar Red';
-        document.getElementById('formularioRed').style.display='block';
-    });
+    const data = _redesMap[String(idr)];
+    if (!data) { alert('No se encontró la red.'); return; }
+    document.getElementById('editId').value=data.idr;
+    document.getElementById('idr').value=data.idr;
+    document.getElementById('nombre').value=data.nombre;
+    document.getElementById('url').value=data.url;
+    document.getElementById('pais').value=data.pais;
+    document.getElementById('formTitulo').innerText='Editar Red';
+    document.getElementById('formularioRed').style.display='block';
 }
 
 function eliminarRed(idr) {

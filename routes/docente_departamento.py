@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from services.api_service import APIService
 
 docente_departamento_bp = Blueprint('docente_departamento', __name__)
@@ -6,34 +6,57 @@ api_service = APIService()
 
 @docente_departamento_bp.route('/')
 def listar():
-    relaciones = api_service.get_all('docente_departamento')
-    return render_template('pages/docente_departamento.html', relaciones=relaciones)
+    exito, resultado = api_service.llamar_sp('sp_crud_docente_departamento', ['LISTAR'])
+    relaciones = resultado if exito and isinstance(resultado, list) else []
+    if not exito:
+        flash(f'Error al cargar relaciones: {resultado}', 'danger')
+    docentes = api_service.get_all('docente')
+    programas = api_service.get_all('programa')
+    return render_template('pages/docente_departamento.html',
+                           relaciones=relaciones, docentes=docentes, programas=programas)
 
 @docente_departamento_bp.route('/crear', methods=['POST'])
 def crear():
-    data = {
-        'docente': request.form['docente'],
-        'departamento': request.form['departamento'],
-        'dedicacion': request.form['dedicacion'],
-        'modalidad': request.form['modalidad'],
-        'fecha_ingreso': request.form['fecha_ingreso'],
-        'fecha_salida': request.form.get('fecha_salida', '')
-    }
-    api_service.create('docente_departamento', data)
+    docente    = request.form.get('docente', type=int)
+    depto      = request.form.get('departamento', type=int)
+    dedicacion = request.form.get('dedicacion') or None
+    modalidad  = request.form.get('modalidad') or None
+    f_ingreso  = request.form.get('fecha_ingreso') or None
+    f_salida   = request.form.get('fecha_salida') or None
+    exito, resultado = api_service.llamar_sp(
+        'sp_crud_docente_departamento',
+        ['INSERT', docente, depto, dedicacion, modalidad, f_ingreso, f_salida]
+    )
+    if exito:
+        flash('Asignación creada exitosamente.', 'success')
+    else:
+        flash(f'Error: {resultado}', 'danger')
     return redirect(url_for('docente_departamento.listar'))
 
 @docente_departamento_bp.route('/editar/<int:docente>/<int:departamento>', methods=['POST'])
 def editar(docente, departamento):
-    data = {
-        'dedicacion': request.form['dedicacion'],
-        'modalidad': request.form['modalidad'],
-        'fecha_ingreso': request.form['fecha_ingreso'],
-        'fecha_salida': request.form.get('fecha_salida', '')
-    }
-    api_service.update_docente_departamento(docente, departamento, data)
+    dedicacion = request.form.get('dedicacion') or None
+    modalidad  = request.form.get('modalidad') or None
+    f_ingreso  = request.form.get('fecha_ingreso') or None
+    f_salida   = request.form.get('fecha_salida') or None
+    exito, resultado = api_service.llamar_sp(
+        'sp_crud_docente_departamento',
+        ['UPDATE', docente, departamento, dedicacion, modalidad, f_ingreso, f_salida]
+    )
+    if exito:
+        flash('Asignación actualizada exitosamente.', 'success')
+    else:
+        flash(f'Error: {resultado}', 'danger')
     return redirect(url_for('docente_departamento.listar'))
 
 @docente_departamento_bp.route('/eliminar/<int:docente>/<int:departamento>')
 def eliminar(docente, departamento):
-    api_service.delete_docente_departamento(docente, departamento)
+    exito, resultado = api_service.llamar_sp(
+        'sp_crud_docente_departamento',
+        ['DELETE', docente, departamento, None, None, None, None]
+    )
+    if exito:
+        flash('Asignación eliminada exitosamente.', 'success')
+    else:
+        flash(f'Error: {resultado}', 'danger')
     return redirect(url_for('docente_departamento.listar'))

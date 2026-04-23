@@ -11,6 +11,24 @@ from config import API_BASE_URL
 
 
 class APIService:
+    # Mapa de tabla → nombre del campo clave primaria
+    # Necesario porque la API genérica usa: PUT /api/{tabla}/{campo}/{valor}
+    _PK_MAP = {
+        'docente': 'cedula',
+        'area_conocimiento': 'id',
+        'linea_investigacion': 'id',
+        'programa': 'id',
+        'red': 'idr',
+        'evaluacion_docente': 'id',
+        'reconocimiento': 'id',
+        'experiencia': 'id',
+        'experiecia': 'id',   # typo en la BD (nombre real de la tabla)
+        'estudios_realizados': 'id',
+        'termino_clave': 'termino',
+        'apoyo_profesoral': 'estudios',
+        'beca': 'estudios',
+    }
+
     def __init__(self):
         self.base_url = API_BASE_URL
 
@@ -198,7 +216,11 @@ class APIService:
                 contenido = respuesta.json()
             except ValueError:
                 return None
-            return contenido.get("datos") or contenido
+            # Desempaquetar {"datos": {...}} o {"datos": [{...}]}
+            datos = contenido.get("datos") if isinstance(contenido, dict) and "datos" in contenido else contenido
+            if isinstance(datos, list):
+                return datos[0] if datos else None
+            return datos
         except requests.RequestException as ex:
             print(f"Error de conexión al obtener {tabla}/{id_valor}: {ex}")
             return None
@@ -208,9 +230,10 @@ class APIService:
         return self.crear(tabla, datos, campos_encriptar)
 
     def update(self, tabla, id_valor, datos, campos_encriptar=None):
-        """PUT /api/{tabla}/{id_valor}"""
+        """PUT /api/{tabla}/{campo}/{id_valor} — usa _PK_MAP para el nombre de columna"""
         try:
-            url = f"{self.base_url}/api/{tabla}/{id_valor}"
+            campo = self._PK_MAP.get(tabla, 'id')
+            url = f"{self.base_url}/api/{tabla}/{campo}/{id_valor}"
             params = {}
             if campos_encriptar:
                 params['camposEncriptar'] = campos_encriptar
@@ -225,9 +248,10 @@ class APIService:
             return (False, f"Error de conexión: {ex}")
 
     def delete(self, tabla, id_valor):
-        """DELETE /api/{tabla}/{id_valor}"""
+        """DELETE /api/{tabla}/{campo}/{id_valor} — usa _PK_MAP para el nombre de columna"""
         try:
-            url = f"{self.base_url}/api/{tabla}/{id_valor}"
+            campo = self._PK_MAP.get(tabla, 'id')
+            url = f"{self.base_url}/api/{tabla}/{campo}/{id_valor}"
             respuesta = requests.delete(url)
             try:
                 contenido = respuesta.json()
@@ -277,3 +301,32 @@ class APIService:
 
     def eliminar_area_de_estudio(self, estudio, area):
         return self.eliminar('estudio_ac', 'id_estudio', estudio)
+
+    # ──────────────────────────────────────────────
+    # LLAMAR SP: invoca una función PostgreSQL directo
+    # ──────────────────────────────────────────────
+
+    def llamar_sp(self, nombre_funcion, params: list):
+        """
+        Llama una función PostgreSQL vía psycopg2.
+        Retorna (exito: bool, resultado).
+        - exito=True  → resultado es el JSONB devuelto (dict o list)
+        - exito=False → resultado es un mensaje de error (str)
+        """
+        import psycopg2
+        from config import DB_CONFIG
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            cur = conn.cursor()
+            placeholders = ', '.join(['%s'] * len(params))
+            cur.execute(f"SELECT * FROM {nombre_funcion}({placeholders})", params)
+            row = cur.fetchone()
+            resultado = row[0] if row else {}
+            conn.commit()
+            cur.close()
+            conn.close()
+            if isinstance(resultado, dict) and 'error' in resultado:
+                return (False, resultado['error'])
+            return (True, resultado)
+        except Exception as ex:
+            return (False, str(ex))

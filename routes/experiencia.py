@@ -7,7 +7,8 @@ api_service = APIService()
 @experiencia_bp.route('/')
 def listar():
     experiencias = api_service.get_all('experiecia')  # Nota: typo en el nombre de la tabla
-    return render_template('pages/experiencia.html', experiencias=experiencias)
+    docentes = api_service.get_all('docente')
+    return render_template('pages/experiencia.html', experiencias=experiencias, docentes=docentes)
 
 @experiencia_bp.route('/crear', methods=['GET', 'POST'])
 def crear():

@@ -65,6 +65,9 @@
 </div>
 
 <script>
+const _areasMap = {};
+{{ areas|tojson }}.forEach(a => { _areasMap[String(a.id)] = a; });
+
 function mostrarFormulario() {
     document.getElementById('formularioArea').style.display = 'block';
     document.getElementById('formTitulo').innerText = 'Nueva Área de Conocimiento';
@@ -77,17 +80,15 @@ function ocultarFormulario() {
 }
 
 function editarArea(id) {
-    fetch(`/api/area_conocimiento/${id}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editId').value = data.id;
-            document.getElementById('id').value = data.id;
-            document.getElementById('gran_area').value = data.gran_area;
-            document.getElementById('area').value = data.area;
-            document.getElementById('disciplina').value = data.disciplina;
-            document.getElementById('formTitulo').innerText = 'Editar Área de Conocimiento';
-            document.getElementById('formularioArea').style.display = 'block';
-        });
+    const data = _areasMap[String(id)];
+    if (!data) { alert('No se encontró el área.'); return; }
+    document.getElementById('editId').value = data.id;
+    document.getElementById('id').value = data.id;
+    document.getElementById('gran_area').value = data.gran_area;
+    document.getElementById('area').value = data.area;
+    document.getElementById('disciplina').value = data.disciplina;
+    document.getElementById('formTitulo').innerText = 'Editar Área de Conocimiento';
+    document.getElementById('formularioArea').style.display = 'block';
 }
 
 function eliminarArea(id) {

@@ -8,6 +8,16 @@
         <h3 class="mb-0"><i class="fas fa-link"></i> Relación Docentes - Estudios</h3>
     </div>
     <div class="card-body">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endwith %}
+
         {% for docente in docentes %}
         <div class="card mb-3">
             <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
@@ -36,21 +46,23 @@
                                     <td>{{ estudio.tipo }}</td>
                                     <td>{{ estudio.pais }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-danger" onclick="eliminarAsignacion({{ docente.cedula }}, {{ estudio.id }})">
+                                        <a href="{{ url_for('docentes_estudios.desasignar', docente=docente.cedula, estudio=estudio.id) }}"
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('¿Desasignar este estudio del docente?')">
                                             <i class="fas fa-trash"></i> Desasignar
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
-                                <tr><td colspan="6" class="text-center">No tiene estudios asignados</td></tr>
+                                <tr><td colspan="6" class="text-center text-muted">No tiene estudios asignados</td></tr>
                             {% endif %}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-        
+
         <!-- Modal para asignar estudio -->
         <div class="modal fade" id="modalAsignar{{ docente.cedula }}" tabindex="-1">
             <div class="modal-dialog">
@@ -64,10 +76,13 @@
                             <input type="hidden" name="docente" value="{{ docente.cedula }}">
                             <div class="mb-3">
                                 <label class="form-label">Seleccionar Estudio</label>
-                                <select class="form-control" name="estudio" required>
+                                <select class="form-select" name="estudio" required>
                                     <option value="">Seleccione un estudio</option>
                                     {% for estudio in todos_estudios %}
-                                    <option value="{{ estudio.id }}">{{ estudio.titulo }} - {{ estudio.universidad }} ({{ estudio.tipo }})</option>
+                                    <option value="{{ estudio.id }}">
+                                        {{ estudio.titulo }} - {{ estudio.universidad }} ({{ estudio.tipo }})
+                                        {% if estudio.asignado %}[ya asignado]{% endif %}
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -83,12 +98,4 @@
         {% endfor %}
     </div>
 </div>
-
-<script>
-function eliminarAsignacion(docente, estudio) {
-    if(confirm('¿Eliminar este estudio del docente?')) {
-        window.location.href = `/docentes_estudios/eliminar_asignacion/${docente}/${estudio}`;
-    }
-}
-</script>
 {% endblock %}

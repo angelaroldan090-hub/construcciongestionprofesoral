@@ -22,8 +22,11 @@ def proxy_get_one(tabla, identificador):
         if not resp.ok:
             return jsonify({}), resp.status_code
         contenido = resp.json()
-        # La API C# devuelve {"datos": {...}} o directamente el objeto
+        # La API C# devuelve {"datos": {...}} o {"datos": [{...}]} o el objeto directo
         datos = contenido.get("datos") if isinstance(contenido, dict) and "datos" in contenido else contenido
+        # Si es lista, devolver el primer elemento (consulta por ID siempre retorna 1 registro)
+        if isinstance(datos, list):
+            datos = datos[0] if datos else {}
         return jsonify(datos)
     except requests.RequestException as ex:
         return jsonify({"error": str(ex)}), 503

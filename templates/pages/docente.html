@@ -157,6 +157,15 @@
 </div>
 
 <script>
+// Datos ya cargados desde el servidor — evita hacer fetch a endpoints inexistentes
+const _docentesMap = {};
+{{ docentes|tojson }}.forEach(d => { _docentesMap[String(d.cedula)] = d; });
+
+function _fecha(val) {
+    // Convierte "1975-03-15T00:00:00" → "1975-03-15" que acepta <input type="date">
+    return val ? String(val).split('T')[0] : '';
+}
+
 function mostrarFormulario() {
     document.getElementById('formularioDocente').style.display = 'block';
     document.getElementById('formTitulo').innerText = 'Nuevo Docente';
@@ -169,54 +178,50 @@ function ocultarFormulario() {
 }
 
 function editarDocente(cedula) {
-    fetch(`/api/docente/${cedula}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('editId').value = data.cedula;
-            document.getElementById('cedula').value = data.cedula;
-            document.getElementById('nombres').value = data.nombres;
-            document.getElementById('apellidos').value = data.apellidos;
-            document.getElementById('genero').value = data.genero;
-            document.getElementById('cargo').value = data.cargo;
-            document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento;
-            document.getElementById('correo').value = data.correo;
-            document.getElementById('telefono').value = data.telefono;
-            document.getElementById('url_cvlac').value = data.url_cvlac;
-            document.getElementById('fecha_actualizacion').value = data.fecha_actualizacion;
-            document.getElementById('escalafon').value = data.escalafon;
-            document.getElementById('cat_minciencia').value = data.cat_minciencia || '';
-            document.getElementById('conv_minciencia').value = data.conv_minciencia;
-            document.getElementById('nacionalidaad').value = data.nacionalidaad;
-            document.getElementById('linea_investigacion_principal').value = data.linea_investigacion_principal || '';
-            document.getElementById('perfil').value = data.perfil;
-            document.getElementById('formTitulo').innerText = 'Editar Docente';
-            document.getElementById('formularioDocente').style.display = 'block';
-        });
+    const data = _docentesMap[String(cedula)];
+    if (!data) { alert('No se encontró el docente.'); return; }
+    document.getElementById('editId').value = data.cedula;
+    document.getElementById('cedula').value = data.cedula;
+    document.getElementById('nombres').value = data.nombres;
+    document.getElementById('apellidos').value = data.apellidos;
+    document.getElementById('genero').value = data.genero;
+    document.getElementById('cargo').value = data.cargo;
+    document.getElementById('fecha_nacimiento').value = _fecha(data.fecha_nacimiento);
+    document.getElementById('correo').value = data.correo;
+    document.getElementById('telefono').value = data.telefono;
+    document.getElementById('url_cvlac').value = data.url_cvlac;
+    document.getElementById('fecha_actualizacion').value = _fecha(data.fecha_actualizacion);
+    document.getElementById('escalafon').value = data.escalafon;
+    document.getElementById('cat_minciencia').value = data.cat_minciencia || '';
+    document.getElementById('conv_minciencia').value = data.conv_minciencia;
+    document.getElementById('nacionalidaad').value = data.nacionalidaad;
+    document.getElementById('linea_investigacion_principal').value = data.linea_investigacion_principal || '';
+    document.getElementById('perfil').value = data.perfil;
+    document.getElementById('formTitulo').innerText = 'Editar Docente';
+    document.getElementById('formularioDocente').style.display = 'block';
 }
 
 function verDocente(cedula) {
-    fetch(`/api/docente/${cedula}`)
-        .then(response => response.json())
-        .then(data => {
-            let html = `<table class="table table-bordered">
-                <tr><th>Cédula:</th><td>${data.cedula}</td></tr>
-                <tr><th>Nombres:</th><td>${data.nombres}</td></tr>
-                <tr><th>Apellidos:</th><td>${data.apellidos}</td></tr>
-                <tr><th>Género:</th><td>${data.genero}</td></tr>
-                <tr><th>Cargo:</th><td>${data.cargo}</td></tr>
-                <tr><th>Fecha Nacimiento:</th><td>${data.fecha_nacimiento}</td></tr>
-                <tr><th>Correo:</th><td>${data.correo}</td></tr>
-                <tr><th>Teléfono:</th><td>${data.telefono}</td></tr>
-                <tr><th>URL CVLAC:</th><td><a href="${data.url_cvlac}" target="_blank">Ver CVLAC</a></td></tr>
-                <tr><th>Escalafón:</th><td>${data.escalafon}</td></tr>
-                <tr><th>Cat. MinCiencia:</th><td>${data.cat_minciencia || 'N/A'}</td></tr>
-                <tr><th>Conv. MinCiencia:</th><td>${data.conv_minciencia}</td></tr>
-                <tr><th>Nacionalidad:</th><td>${data.nacionalidaad}</td></tr>
-                <tr><th>Perfil:</th><td>${data.perfil}</td></tr>
-            </table>`;
-            document.getElementById('verDocenteContent').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('verDocenteModal')).show();
-        });
+    const data = _docentesMap[String(cedula)];
+    if (!data) { alert('No se encontró el docente.'); return; }
+    let html = `<table class="table table-bordered">
+        <tr><th>Cédula:</th><td>${data.cedula}</td></tr>
+        <tr><th>Nombres:</th><td>${data.nombres}</td></tr>
+        <tr><th>Apellidos:</th><td>${data.apellidos}</td></tr>
+        <tr><th>Género:</th><td>${data.genero}</td></tr>
+        <tr><th>Cargo:</th><td>${data.cargo}</td></tr>
+        <tr><th>Fecha Nacimiento:</th><td>${_fecha(data.fecha_nacimiento)}</td></tr>
+        <tr><th>Correo:</th><td>${data.correo}</td></tr>
+        <tr><th>Teléfono:</th><td>${data.telefono}</td></tr>
+        <tr><th>URL CVLAC:</th><td><a href="${data.url_cvlac}" target="_blank">Ver CVLAC</a></td></tr>
+        <tr><th>Escalafón:</th><td>${data.escalafon}</td></tr>
+        <tr><th>Cat. MinCiencia:</th><td>${data.cat_minciencia || 'N/A'}</td></tr>
+        <tr><th>Conv. MinCiencia:</th><td>${data.conv_minciencia}</td></tr>
+        <tr><th>Nacionalidad:</th><td>${data.nacionalidaad}</td></tr>
+        <tr><th>Perfil:</th><td>${data.perfil}</td></tr>
+    </table>`;
+    document.getElementById('verDocenteContent').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('verDocenteModal')).show();
 }
 
 function eliminarDocente(cedula) {
