@@ -1,123 +1,130 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Relación Estudio - Área de Conocimiento{% endblock %}
-
-{% block extra_css %}
-<style>
-    .estudioac-card {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-    }
-    
-    .estudioac-icon {
-        font-size: 3rem;
-        opacity: 0.3;
-        position: absolute;
-        right: 1rem;
-        top: 1rem;
-    }
-    
-    .relacion-badge {
-        background: #e9ecef;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-family: monospace;
-    }
-</style>
-{% endblock %}
+{% block title %}Estudios - Áreas de Conocimiento{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="estudioac-card position-relative fade-in">
-        <h1 class="h3 mb-2">
-            <i class="fas fa-graduation-cap me-2"></i>Relación Estudio - Área de Conocimiento
-        </h1>
-        <p class="mb-0 opacity-75">Asocia los estudios realizados con sus áreas de conocimiento</p>
-        <i class="fas fa-project-diagram estudioac-icon"></i>
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-link"></i> Relación Estudios - Áreas de Conocimiento</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nueva Relación
+        </button>
     </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioRelacion" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nueva Relación Estudio - Área</h4>
+            <form method="POST" id="relacionForm">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label>Estudio *</label>
+                        <select class="form-control" id="estudio" name="estudio" required>
+                            <option value="">Seleccione un estudio</option>
+                            {% for estudio in estudios %}
+                            <option value="{{ estudio.id }}">{{ estudio.titulo }} - {{ estudio.universidad }} (ID: {{ estudio.id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Área de Conocimiento *</label>
+                        <select class="form-control" id="area_conocimiento" name="area_conocimiento" required>
+                            <option value="">Seleccione un área</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.gran_area }} > {{ area.area }} > {{ area.disciplina }} (ID: {{ area.id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <form method="GET" action="{{ url_for('estudio_ac.index') }}" class="row g-3 align-items-center">
-                <div class="col-auto">
-                    <select name="limite" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-                        <option value="10" {% if limite == 10 %}selected{% endif %}>10</option>
-                        <option value="25" {% if limite == 25 %}selected{% endif %}>25</option>
-                        <option value="50" {% if limite == 50 %}selected{% endif %}>50</option>
-                        <option value="100" {% if limite == 100 %}selected{% endif %}>100</option>
-                        <option value="" {% if not limite %}selected{% endif %}>Todos</option>
-                    </select>
-                </div>
-                <div class="col-auto ms-auto">
-                    <span class="badge bg-success">Total: {{ registros|length }} relaciones</span>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
                 </div>
             </form>
         </div>
-    </div>
-
-    <div class="mb-4 text-end">
-        <a href="{{ url_for('estudio_ac.index', accion='nuevo', limite=limite) }}" class="btn btn-primary">
-            <i class="fas fa-plus-circle me-2"></i>Nueva Relación
-        </a>
-    </div>
-
-    <div class="card shadow-sm">
+        
+        <!-- Tabla de listado agrupado por estudio -->
+        <div class="accordion" id="accordionEstudios">
+            {% for estudio in estudios %}
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ estudio.id }}">
+                        <strong>
+                            <i class="fas fa-graduation-cap"></i> {{ estudio.titulo }} - {{ estudio.universidad }}
+                            <span class="badge bg-primary ms-2">{{ estudio.areas|length }} área(s)</span>
+                        </strong>
+                    </button>
+                </h2>
+                <div id="collapse{{ estudio.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#accordionEstudios">
+                    <div class="accordion-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID Área</th>
+                                        <th>Gran Área</th>
+                                        <th>Área</th>
+                                        <th>Disciplina</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if estudio.areas %}
+                                        {% for area in estudio.areas %}
+                                        <tr>
+                                            <td>{{ area.id }}</td
+                                            <td>{{ area.gran_area }}</td
+                                            <td>{{ area.area }}</td
+                                            <td>{{ area.disciplina }}</td
+                                            <td>
+                                                <button class="btn btn-sm btn-danger" onclick="eliminarRelacion({{ estudio.id }}, {{ area.id }})">
+                                                    <i class="fas fa-trash"></i> Desvincular
+                                                </button>
+                                            </td
+                                        	但
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">No tiene áreas de conocimiento asociadas</td>
+                                        	但
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Botón para agregar área a este estudio -->
+                        <div class="text-end mt-2">
+                            <button class="btn btn-sm btn-success" onclick="agregarAreaAEstudio({{ estudio.id }}, '{{ estudio.titulo }}')">
+                                <i class="fas fa-plus"></i> Agregar Área de Conocimiento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Vista alternativa: Tabla plana -->
+        <hr>
+        <h5 class="mt-3">Vista de todas las relaciones:</h5>
         <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead class="table-light">
+            <table class="table table-striped table-sm">
+                <thead>
                     <tr>
-                        <th>Estudio Realizado</th>
+                        <th>Estudio</th>
                         <th>Área de Conocimiento</th>
-                        <th>Gran Área</th>
-                        <th>Disciplina</th>
-                        <th class="text-end">Acciones</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for relacion in registros %}
-                    <tr class="fade-in" style="animation-delay: {{ loop.index * 0.05 }}s">
-                        <td class="fw-bold">
-                            <i class="fas fa-graduation-cap me-1 text-success"></i>
-                            {{ relacion.estudio_titulo or relacion.estudio }}
-                        </td>
-                        <td>{{ relacion.area_conocimiento_nombre or relacion.area_conocimiento }}</td>
-                        <td>{{ relacion.gran_area or '-' }}</td>
-                        <td>{{ relacion.disciplina or '-' }}</td>
-                        <td class="text-end">
-                            <form method="POST" action="{{ url_for('estudio_ac.eliminar') }}" style="display: inline;">
-                                <input type="hidden" name="estudio" value="{{ relacion.estudio }}">
-                                <input type="hidden" name="area_conocimiento" value="{{ relacion.area_conocimiento }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                        onclick="return confirm('¿Eliminar esta relación?')">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
+                    {% for relacion in relaciones %}
                     <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No hay relaciones registradas</p>
-                            <a href="{{ url_for('estudio_ac.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-plus-circle me-1"></i>Crear primera relación
-                            </a>
+                        <td>{{ relacion.estudio_titulo if relacion.estudio_titulo else relacion.estudio }}</td>
+                        <td>{{ relacion.area_nombre if relacion.area_nombre else relacion.area_conocimiento }}<br>
+                            <small class="text-muted">{{ relacion.gran_area }} > {{ relacion.area }}</small>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarRelacion('{{ relacion.estudio }}','{{ relacion.area_conocimiento }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -125,50 +132,69 @@
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Modal Formulario -->
-    {% if mostrar_formulario %}
-    <div class="modal fade show" id="formModal" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-plus-circle me-2"></i>Nueva Relación Estudio - Área Conocimiento
-                    </h5>
-                    <a href="{{ url_for('estudio_ac.index', limite=limite) }}" class="btn-close btn-close-white"></a>
-                </div>
-                <form method="POST" action="{{ url_for('estudio_ac.crear') }}">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Estudio Realizado <span class="text-danger">*</span></label>
-                            <select class="form-select" name="estudio" required>
-                                <option value="">Seleccionar estudio</option>
-                                {% for estudio in estudios %}
-                                <option value="{{ estudio.id }}">{{ estudio.titulo }} - {{ estudio.universidad }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Área de Conocimiento <span class="text-danger">*</span></label>
-                            <select class="form-select" name="area_conocimiento" required>
-                                <option value="">Seleccionar área</option>
-                                {% for area in areas_conocimiento %}
-                                <option value="{{ area.id }}">{{ area.gran_area }} / {{ area.area }} / {{ area.disciplina }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="{{ url_for('estudio_ac.index', limite=limite) }}" class="btn btn-light">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus-circle me-1"></i> Crear
-                        </button>
-                    </div>
-                </form>
+<!-- Modal para agregar área a estudio -->
+<div class="modal fade" id="modalAgregarArea" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Agregar Área de Conocimiento a Estudio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <form action="{{ url_for('estudio_ac.crear') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" id="modal_estudio" name="estudio">
+                    <div class="mb-3">
+                        <label class="form-label">Estudio:</label>
+                        <p id="modal_estudio_nombre" class="fw-bold"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Área de Conocimiento *</label>
+                        <select class="form-control" name="area_conocimiento" required>
+                            <option value="">Seleccione un área</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id }}">{{ area.gran_area }} > {{ area.area }} > {{ area.disciplina }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Agregar</button>
+                </div>
+            </form>
         </div>
     </div>
-    {% endif %}
 </div>
+
+<script>
+function mostrarFormulario() {
+    document.getElementById('formularioRelacion').style.display = 'block';
+    document.getElementById('relacionForm').reset();
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioRelacion').style.display = 'none';
+}
+
+function agregarAreaAEstudio(estudioId, estudioTitulo) {
+    document.getElementById('modal_estudio').value = estudioId;
+    document.getElementById('modal_estudio_nombre').innerText = estudioTitulo;
+    new bootstrap.Modal(document.getElementById('modalAgregarArea')).show();
+}
+
+function eliminarRelacion(estudio, area) {
+    if(confirm('¿Está seguro de eliminar esta relación?')) {
+        window.location.href = `/estudio_ac/eliminar/${estudio}/${area}`;
+    }
+}
+
+document.getElementById('relacionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/estudio_ac/crear', { method: 'POST', body: formData })
+        .then(() => { window.location.reload(); });
+});
+</script>
 {% endblock %}

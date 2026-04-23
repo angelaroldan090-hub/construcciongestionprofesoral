@@ -1,557 +1,238 @@
 {% extends "layout/base.html" %}
 
+{% block title %}Gestión de Docentes{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
-                    <h3 class="card-title mb-2 mb-sm-0">
-                        <i class="fas fa-chalkboard-user me-2"></i>Gestión de Docentes
-                    </h3>
-                    <div class="d-flex gap-2">
-                        <div class="position-relative">
-                            <div class="input-group input-group-sm">
-                                <input type="text" id="buscadorDocente" class="form-control"
-                                    placeholder="Buscar docente por cedula o nombre..." autocomplete="off"
-                                    style="min-width: 280px;">
-                                <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                                <button class="btn btn-outline-danger" type="button" id="btnLimpiar"
-                                    style="display: none;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <div id="sugerenciasLista" class="list-group position-absolute w-100"
-                                style="display: none; z-index: 1000; max-height: 300px; overflow-y: auto;">
-                            </div>
-                        </div>
-                        <a href="{{ url_for('docente.index', accion='nuevo') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Nuevo Docente
-                        </a>
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-user-tie"></i> Gestión de Docentes</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()" id="btnNuevo">
+            <i class="fas fa-plus"></i> Nuevo Docente
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario para crear/editar -->
+        <div id="formularioDocente" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Docente</h4>
+            <form method="POST" id="docenteForm">
+                <input type="hidden" id="editId" name="editId">
+                
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label>Cédula *</label>
+                        <input type="number" class="form-control" id="cedula" name="cedula" required>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label>Nombres *</label>
+                        <input type="text" class="form-control" id="nombres" name="nombres" required>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label>Apellidos *</label>
+                        <input type="text" class="form-control" id="apellidos" name="apellidos" required>
                     </div>
                 </div>
-
-                <div class="card-body">
-                    <div class="d-flex justify-content-end mb-3">
-                        <a href="{{ url_for('docente_departamento.index') }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-building me-1"></i>Ir a Vinculacion Docente - Departamento
-                        </a>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label>Género *</label>
+                        <select class="form-control" id="genero" name="genero" required>
+                            <option value="">Seleccione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
                     </div>
-
-                    {% if busqueda %}
-                    <div class="alert alert-info alert-sm mb-3">
-                        <i class="fas fa-search me-1"></i> Resultados para: "{{ busqueda }}" - Se encontraron {{
-                        registros|length }} docente(s)
-                        <a href="{{ url_for('docente.index') }}" class="float-end text-decoration-none">Limpiar
-                            busqueda</a>
+                    <div class="col-md-3 mb-2">
+                        <label>Cargo *</label>
+                        <input type="text" class="form-control" id="cargo" name="cargo" required>
                     </div>
-                    {% endif %}
-
-                    <!-- Tabla de docentes -->
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover" id="tablaDocentes">
-                            <thead>
-                                <tr>
-                                    <th>Cédula</th>
-                                    <th>Nombres</th>
-                                    <th>Apellidos</th>
-                                    <th>Correo</th>
-                                    <th>Cargo</th>
-                                    <th width="150">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if registros %}
-                                {% for docente in registros %}
-                                <tr>
-                                    <td>{{ docente.cedula }}</td>
-                                    <td>{{ docente.nombres }}</td>
-                                    <td>{{ docente.apellidos }}</td>
-                                    <td>{{ docente.correo }}</td>
-                                    <td>{{ docente.cargo }}</td>
-                                    <td class="text-center">
-                                        <a href="{{ url_for('docente.index', accion='editar', clave=docente.cedula) }}"
-                                            class="btn btn-warning btn-sm" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button class="btn btn-danger btn-sm" title="Eliminar"
-                                            onclick="eliminarDocente('{{ docente.cedula }}')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                                {% else %}
-                                <tr>
-                                    <td colspan="6" class="text-center">No hay docentes registrados</td>
-                                </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                    <div class="col-md-3 mb-2">
+                        <label>Fecha Nacimiento *</label>
+                        <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
                     </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Correo *</label>
+                        <input type="email" class="form-control" id="correo" name="correo" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label>Teléfono *</label>
+                        <input type="text" class="form-control" id="telefono" name="telefono" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>URL CVLAC *</label>
+                        <input type="url" class="form-control" id="url_cvlac" name="url_cvlac" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Fecha Actualización *</label>
+                        <input type="date" class="form-control" id="fecha_actualizacion" name="fecha_actualizacion" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Escalafón *</label>
+                        <input type="text" class="form-control" id="escalafon" name="escalafon" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label>Cat. MinCiencia</label>
+                        <input type="text" class="form-control" id="cat_minciencia" name="cat_minciencia">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Conv. MinCiencia *</label>
+                        <input type="text" class="form-control" id="conv_minciencia" name="conv_minciencia" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Nacionalidad *</label>
+                        <input type="text" class="form-control" id="nacionalidaad" name="nacionalidaad" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Línea Investigación</label>
+                        <select class="form-control" id="linea_investigacion_principal" name="linea_investigacion_principal">
+                            <option value="">Seleccione</option>
+                            {% for linea in lineas %}
+                            <option value="{{ linea.id }}">{{ linea.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <label>Perfil *</label>
+                    <textarea class="form-control" id="perfil" name="perfil" rows="3" required></textarea>
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div id="tablaDocentes">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cédula</th><th>Nombres</th><th>Apellidos</th>
+                            <th>Cargo</th><th>Correo</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for docente in docentes %}
+                        <tr>
+                            <td>{{ docente.cedula }}</td>
+                            <td>{{ docente.nombres }}</td>
+                            <td>{{ docente.apellidos }}</td>
+                            <td>{{ docente.cargo }}</td>
+                            <td>{{ docente.correo }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="verDocente({{ docente.cedula }})" title="Ver"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-warning" onclick="editarDocente({{ docente.cedula }})" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="eliminarDocente({{ docente.cedula }})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Modal para ver detalle -->
+        <div class="modal fade" id="verDocenteModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">Detalle del Docente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="verDocenteContent"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Modal para crear/editar docente (con vinculaciones integradas) -->
-    {% if mostrar_formulario %}
-    <div class="modal fade show" id="modalDocente" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-{{ 'edit' if editando else 'plus' }} me-2"></i>
-                        {{ 'Editar' if editando else 'Nuevo' }} Docente
-                    </h5>
-                    <a href="{{ url_for('docente.index') }}" class="btn-close"></a>
-                </div>
-                <form method="POST"
-                    action="{{ url_for('docente.actualizar') if editando else url_for('docente.crear') }}">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Cédula *</label>
-                                    <input type="number" name="cedula" class="form-control"
-                                        value="{{ registro.cedula if registro else '' }}" {% if editando %}readonly{%
-                                        endif %} required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Nombres *</label>
-                                    <input type="text" name="nombres" class="form-control"
-                                        value="{{ registro.nombres if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Apellidos *</label>
-                                    <input type="text" name="apellidos" class="form-control"
-                                        value="{{ registro.apellidos if registro else '' }}" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Género *</label>
-                                    <select name="genero" class="form-select" required>
-                                        <option value="">Seleccione</option>
-                                        <option value="Masculino" {% if registro and registro.genero=='Masculino'
-                                            %}selected{% endif %}>Masculino</option>
-                                        <option value="Femenino" {% if registro and registro.genero=='Femenino'
-                                            %}selected{% endif %}>Femenino</option>
-                                        <option value="Otro" {% if registro and registro.genero=='Otro' %}selected{%
-                                            endif %}>Otro</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Fecha Nacimiento *</label>
-                                    <input type="date" name="fecha_nacimiento" class="form-control"
-                                        value="{{ registro.fecha_nacimiento if registro else '' }}" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Cargo *</label>
-                                    <input type="text" name="cargo" class="form-control"
-                                        value="{{ registro.cargo if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Correo *</label>
-                                    <input type="email" name="correo" class="form-control"
-                                        value="{{ registro.correo if registro else '' }}" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Teléfono *</label>
-                                    <input type="text" name="telefono" class="form-control"
-                                        value="{{ registro.telefono if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">URL CVLAC *</label>
-                                    <input type="url" name="url_cvlac" class="form-control"
-                                        value="{{ registro.url_cvlac if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Escalafón *</label>
-                                    <input type="text" name="escalafon" class="form-control"
-                                        value="{{ registro.escalafon if registro else '' }}" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Categoría Minciencia</label>
-                                    <input type="text" name="cat_minciencia" class="form-control"
-                                        value="{{ registro.cat_minciencia if registro else '' }}">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Convocatoria Minciencia *</label>
-                                    <input type="text" name="conv_minciencia" class="form-control"
-                                        value="{{ registro.conv_minciencia if registro else '' }}" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Nacionalidad *</label>
-                                    <input type="text" name="nacionalidad" class="form-control"
-                                        value="{{ registro.nacionalidad if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Línea Investigación Principal</label>
-                                    <select name="linea_investigacion_principal" class="form-select">
-                                        <option value="">Seleccione</option>
-                                        {% if lineas %}
-                                        {% for linea in lineas %}
-                                        <option value="{{ linea.id }}" {% if registro and
-                                            registro.linea_investigacion_principal==linea.id %}selected{% endif %}>
-                                            {{ linea.nombre }}
-                                        </option>
-                                        {% endfor %}
-                                        {% endif %}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Perfil *</label>
-                                    <textarea name="perfil" class="form-control" rows="3"
-                                        required>{{ registro.perfil if registro else '' }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label class="form-label">Fecha Actualización *</label>
-                                    <input type="date" name="fecha_actualizacion" class="form-control"
-                                        value="{{ registro.fecha_actualizacion if registro else '' }}" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ========== SECCIÓN: VINCULACIONES DEPARTAMENTALES ========== -->
-                        {% if editando %}
-                        <hr>
-                        <h4 class="mt-3 mb-3">
-                            <i class="fas fa-building me-2"></i>Vinculacion Docente - Departamento
-                        </h4>
-
-                        <div class="table-responsive mb-3">
-                            <table class="table table-sm table-bordered" id="tablaVinculaciones">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Departamento</th>
-                                        <th>Dedicación</th>
-                                        <th>Modalidad</th>
-                                        <th>Fecha Ingreso</th>
-                                        <th>Fecha Salida</th>
-                                        <th width="80">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbodyVinculaciones">
-                                    {% if vinculaciones %}
-                                    {% for vinc in vinculaciones %}
-                                    <tr data-docente="{{ vinc.docente }}" data-departamento="{{ vinc.departamento }}">
-                                        <td>{{ vinc.departamento_nombre or vinc.departamento }}</td>
-                                        <td>{{ vinc.dedicacion }}</td>
-                                        <td>{{ vinc.modalidad }}</td>
-                                        <td>{{ vinc.fecha_ingreso }}</td>
-                                        <td>{{ vinc.fecha_salida or 'Actual' }}</td>
-                                        <td class="text-center">
-                                            <button class="btn btn-danger btn-sm" title="Eliminar"
-                                                onclick="eliminarVinculacion('{{ vinc.docente }}', '{{ vinc.departamento }}')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="6" class="text-center">No hay vinculaciones registradas</td>
-                                    </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Formulario para nueva vinculación -->
-                        <h5 class="mt-3">Agregar Nueva Vinculación</h5>
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label small">Departamento</label>
-                                <select id="nuevo-departamento" class="form-select form-select-sm">
-                                    <option value="">Seleccione</option>
-                                    {% if departamentos %}
-                                    {% for depto in departamentos %}
-                                    <option value="{{ depto.id }}">{{ depto.nombre }}</option>
-                                    {% endfor %}
-                                    {% endif %}
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small">Dedicación</label>
-                                <select id="nueva-dedicacion" class="form-select form-select-sm">
-                                    <option value="Medio Tiempo">Medio Tiempo</option>
-                                    <option value="Tiempo Completo">Tiempo Completo</option>
-                                    <option value="Cátedra">Cátedra</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small">Modalidad</label>
-                                <select id="nueva-modalidad" class="form-select form-select-sm">
-                                    <option value="Presencial">Presencial</option>
-                                    <option value="Virtual">Virtual</option>
-                                    <option value="Mixta">Mixta</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small">Fecha Ingreso</label>
-                                <input type="date" id="nueva-fecha-ingreso" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small">Fecha Salida</label>
-                                <input type="date" id="nueva-fecha-salida" class="form-control form-control-sm">
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-success btn-sm w-100"
-                                    onclick="agregarVinculacion('{{ registro.cedula }}')">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="modal-footer">
-                        <a href="{{ url_for('docente.index') }}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Guardar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <script>
-    function eliminarDocente(cedula) {
-        if (confirm('¿Está seguro de eliminar este docente?')) {
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{{ url_for('docente.eliminar') }}";
-            var input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'cedula';
-            input.value = cedula;
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-        }
+function mostrarFormulario() {
+    document.getElementById('formularioDocente').style.display = 'block';
+    document.getElementById('formTitulo').innerText = 'Nuevo Docente';
+    document.getElementById('docenteForm').reset();
+    document.getElementById('editId').value = '';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioDocente').style.display = 'none';
+}
+
+function editarDocente(cedula) {
+    fetch(`/api/docente/${cedula}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editId').value = data.cedula;
+            document.getElementById('cedula').value = data.cedula;
+            document.getElementById('nombres').value = data.nombres;
+            document.getElementById('apellidos').value = data.apellidos;
+            document.getElementById('genero').value = data.genero;
+            document.getElementById('cargo').value = data.cargo;
+            document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento;
+            document.getElementById('correo').value = data.correo;
+            document.getElementById('telefono').value = data.telefono;
+            document.getElementById('url_cvlac').value = data.url_cvlac;
+            document.getElementById('fecha_actualizacion').value = data.fecha_actualizacion;
+            document.getElementById('escalafon').value = data.escalafon;
+            document.getElementById('cat_minciencia').value = data.cat_minciencia || '';
+            document.getElementById('conv_minciencia').value = data.conv_minciencia;
+            document.getElementById('nacionalidaad').value = data.nacionalidaad;
+            document.getElementById('linea_investigacion_principal').value = data.linea_investigacion_principal || '';
+            document.getElementById('perfil').value = data.perfil;
+            document.getElementById('formTitulo').innerText = 'Editar Docente';
+            document.getElementById('formularioDocente').style.display = 'block';
+        });
+}
+
+function verDocente(cedula) {
+    fetch(`/api/docente/${cedula}`)
+        .then(response => response.json())
+        .then(data => {
+            let html = `<table class="table table-bordered">
+                <tr><th>Cédula:</th><td>${data.cedula}</td></tr>
+                <tr><th>Nombres:</th><td>${data.nombres}</td></tr>
+                <tr><th>Apellidos:</th><td>${data.apellidos}</td></tr>
+                <tr><th>Género:</th><td>${data.genero}</td></tr>
+                <tr><th>Cargo:</th><td>${data.cargo}</td></tr>
+                <tr><th>Fecha Nacimiento:</th><td>${data.fecha_nacimiento}</td></tr>
+                <tr><th>Correo:</th><td>${data.correo}</td></tr>
+                <tr><th>Teléfono:</th><td>${data.telefono}</td></tr>
+                <tr><th>URL CVLAC:</th><td><a href="${data.url_cvlac}" target="_blank">Ver CVLAC</a></td></tr>
+                <tr><th>Escalafón:</th><td>${data.escalafon}</td></tr>
+                <tr><th>Cat. MinCiencia:</th><td>${data.cat_minciencia || 'N/A'}</td></tr>
+                <tr><th>Conv. MinCiencia:</th><td>${data.conv_minciencia}</td></tr>
+                <tr><th>Nacionalidad:</th><td>${data.nacionalidaad}</td></tr>
+                <tr><th>Perfil:</th><td>${data.perfil}</td></tr>
+            </table>`;
+            document.getElementById('verDocenteContent').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('verDocenteModal')).show();
+        });
+}
+
+function eliminarDocente(cedula) {
+    if(confirm('¿Está seguro de eliminar este docente?')) {
+        window.location.href = `/docente/eliminar/${cedula}`;
     }
+}
 
-    function agregarVinculacion(docenteId) {
-        const departamento = document.getElementById('nuevo-departamento').value;
-        const fechaIngreso = document.getElementById('nueva-fecha-ingreso').value;
-
-        if (!departamento) {
-            alert('Seleccione un departamento');
-            return;
-        }
-        if (!fechaIngreso) {
-            alert('Seleccione una fecha de ingreso');
-            return;
-        }
-
-        const data = {
-            docente: parseInt(docenteId),
-            departamento: parseInt(departamento),
-            dedicacion: document.getElementById('nueva-dedicacion').value,
-            modalidad: document.getElementById('nueva-modalidad').value,
-            fecha_ingreso: fechaIngreso,
-            fecha_salida: document.getElementById('nueva-fecha-salida').value || null
-        };
-
-        fetch('/api/docente_vinculacion/crear', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al crear la vinculación');
-            });
-    }
-
-    function eliminarVinculacion(docenteId, departamentoId) {
-        if (confirm('¿Eliminar esta vinculación departamental?')) {
-            fetch('/api/docente_vinculacion/eliminar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    docente: parseInt(docenteId),
-                    departamento: parseInt(departamentoId)
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al eliminar la vinculación');
-                });
-        }
-    }
-
-    // Buscador desplegable
-    const buscadorInput = document.getElementById('buscadorDocente');
-    const sugerenciasLista = document.getElementById('sugerenciasLista');
-    const btnLimpiar = document.getElementById('btnLimpiar');
-    const btnBuscar = document.getElementById('btnBuscar');
-    let timeoutId = null;
-
-    function buscarSugerencias() {
-        const query = buscadorInput.value.trim();
-
-        if (query.length < 2) {
-            sugerenciasLista.style.display = 'none';
-            btnLimpiar.style.display = 'none';
-            return;
-        }
-
-        btnLimpiar.style.display = 'block';
-
-        fetch(`/docente/sugerencias?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.length > 0) {
-                    sugerenciasLista.innerHTML = '';
-                    data.forEach(docente => {
-                        const item = document.createElement('a');
-                        item.href = '#';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${docente.cedula}</strong> - ${docente.nombres} ${docente.apellidos}
-                            </div>
-                            <small class="text-muted">${docente.cargo || 'Sin cargo'}</small>
-                        </div>
-                    `;
-                        item.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            window.location.href = `/docente?accion=editar&clave=${docente.cedula}`;
-                        });
-                        sugerenciasLista.appendChild(item);
-                    });
-                    sugerenciasLista.style.display = 'block';
-                } else {
-                    sugerenciasLista.innerHTML = '<div class="list-group-item text-muted">No se encontraron docentes</div>';
-                    sugerenciasLista.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                sugerenciasLista.style.display = 'none';
-            });
-    }
-
-    function limpiarBusqueda() {
-        buscadorInput.value = '';
-        sugerenciasLista.style.display = 'none';
-        btnLimpiar.style.display = 'none';
-        window.location.href = '/docente';
-    }
-
-    buscadorInput.addEventListener('keyup', function () {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(buscarSugerencias, 300);
-    });
-
-    buscadorInput.addEventListener('focus', function () {
-        if (buscadorInput.value.trim().length >= 2) {
-            buscarSugerencias();
-        }
-    });
-
-    btnLimpiar.addEventListener('click', limpiarBusqueda);
-
-    btnBuscar.addEventListener('click', function () {
-        const query = buscadorInput.value.trim();
-        if (query) {
-            window.location.href = `/docente/buscar?q=${encodeURIComponent(query)}`;
-        }
-    });
-
-    buscadorInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const query = buscadorInput.value.trim();
-            if (query) {
-                window.location.href = `/docente/buscar?q=${encodeURIComponent(query)}`;
-            }
-        }
-    });
-
-    document.addEventListener('click', function (e) {
-        if (!buscadorInput.contains(e.target) && !sugerenciasLista.contains(e.target)) {
-            sugerenciasLista.style.display = 'none';
-        }
-    });
+document.getElementById('docenteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    const url = editId ? `/docente/editar/${editId}` : '/docente/crear';
+    const formData = new FormData(this);
+    
+    fetch(url, { method: 'POST', body: formData })
+        .then(() => { window.location.reload(); });
+});
 </script>
 {% endblock %}

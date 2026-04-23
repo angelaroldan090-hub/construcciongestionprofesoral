@@ -1,0 +1,181 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Gestión de Estudios Realizados{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-graduation-cap"></i> Gestión de Estudios Realizados</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()" id="btnNuevo">
+            <i class="fas fa-plus"></i> Nuevo Estudio
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioEstudio" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Estudio</h4>
+            <form method="POST" id="estudioForm">
+                <input type="hidden" id="editId" name="editId">
+                
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label>ID *</label>
+                        <input type="number" class="form-control" id="id" name="id" required>
+                    </div>
+                    <div class="col-md-8 mb-2">
+                        <label>Título *</label>
+                        <input type="text" class="form-control" id="titulo" name="titulo" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label>Universidad *</label>
+                        <input type="text" class="form-control" id="universidad" name="universidad" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Fecha *</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Tipo *</label>
+                        <select class="form-control" id="tipo" name="tipo" required>
+                            <option value="">Seleccione</option>
+                            <option value="Pregrado">Pregrado</option>
+                            <option value="Especialización">Especialización</option>
+                            <option value="Maestría">Maestría</option>
+                            <option value="Doctorado">Doctorado</option>
+                            <option value="Postdoctorado">Postdoctorado</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <label>Ciudad *</label>
+                        <input type="text" class="form-control" id="ciudad" name="ciudad" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>País *</label>
+                        <input type="text" class="form-control" id="pais" name="pais" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Inst. Acreditada *</label>
+                        <select class="form-control" id="ins_acreditada" name="ins_acreditada" required>
+                            <option value="1">Sí</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label>Metodología *</label>
+                        <select class="form-control" id="metodologia" name="metodologia" required>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Virtual">Virtual</option>
+                            <option value="Mixta">Mixta</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12 mb-2">
+                        <label>Docente *</label>
+                        <select class="form-control" id="docente" name="docente" required>
+                            <option value="">Seleccione un docente</option>
+                            {% for docente in docentes %}
+                            <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }} ({{ docente.cedula }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <label>Perfil del Egresado *</label>
+                    <textarea class="form-control" id="perfil_egresado" name="perfil_egresado" rows="2" required></textarea>
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Título</th><th>Universidad</th>
+                        <th>Tipo</th><th>Docente</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estudio in estudios %}
+                    <tr>
+                        <td>{{ estudio.id }}</td>
+                        <td>{{ estudio.titulo }}</td>
+                        <td>{{ estudio.universidad }}</td>
+                        <td>{{ estudio.tipo }}</td>
+                        <td>{{ estudio.docente_nombre if estudio.docente_nombre else estudio.docente }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarEstudio({{ estudio.id }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarEstudio({{ estudio.id }})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarFormulario() {
+    document.getElementById('formularioEstudio').style.display = 'block';
+    document.getElementById('formTitulo').innerText = 'Nuevo Estudio';
+    document.getElementById('estudioForm').reset();
+    document.getElementById('editId').value = '';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioEstudio').style.display = 'none';
+}
+
+function editarEstudio(id) {
+    fetch(`/api/estudios_realizados/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editId').value = data.id;
+            document.getElementById('id').value = data.id;
+            document.getElementById('titulo').value = data.titulo;
+            document.getElementById('universidad').value = data.universidad;
+            document.getElementById('fecha').value = data.fecha;
+            document.getElementById('tipo').value = data.tipo;
+            document.getElementById('ciudad').value = data.ciudad;
+            document.getElementById('pais').value = data.pais;
+            document.getElementById('ins_acreditada').value = data.ins_acreditada;
+            document.getElementById('metodologia').value = data.metodologia;
+            document.getElementById('docente').value = data.docente;
+            document.getElementById('perfil_egresado').value = data.perfil_egresado;
+            document.getElementById('formTitulo').innerText = 'Editar Estudio';
+            document.getElementById('formularioEstudio').style.display = 'block';
+        });
+}
+
+function eliminarEstudio(id) {
+    if(confirm('¿Está seguro de eliminar este estudio?')) {
+        window.location.href = `/estudios/eliminar/${id}`;
+    }
+}
+
+document.getElementById('estudioForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    const url = editId ? `/estudios/editar/${editId}` : '/estudios/crear';
+    const formData = new FormData(this);
+    
+    fetch(url, { method: 'POST', body: formData })
+        .then(() => { window.location.reload(); });
+});
+</script>
+{% endblock %}

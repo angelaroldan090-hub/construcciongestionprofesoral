@@ -1,94 +1,59 @@
-{#
-    nav_menu.html - Menu de navegacion lateral.
-    Incluye todos los módulos disponibles.
-#}
-
-<div class="top-row ps-3 navbar navbar-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">Sistema Gestión Profesoral</a>
+        <a class="navbar-brand" href="{{ url_for('home.index') }}">
+            <i class="fas fa-chalkboard-user"></i> Gestión Profesoral
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-tie"></i> Docentes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('docente.listar') }}">Docentes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('docentes_estudios.listar') }}">Docentes - Estudios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('evaluacion.listar') }}">Evaluaciones</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reconocimiento.listar') }}">Reconocimientos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('experiencia.listar') }}">Experiencias</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-graduation-cap"></i> Estudios
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('estudios.listar') }}">Estudios Realizados</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('area.listar') }}">Áreas de Conocimiento</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('apoyo.listar') }}">Apoyos Profesorales</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('beca.listar') }}">Becas</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-network-wired"></i> Redes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('red.listar') }}">Redes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('red_docente.listar') }}">Redes - Docentes</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-flask"></i> Investigación
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('linea.listar') }}">Líneas de Investigación</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('termino.listar') }}">Términos Clave</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('programa.listar') }}">Programas</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
     </div>
-</div>
-
-<input type="checkbox" title="Menu de navegacion" class="navbar-toggler" id="navToggle" />
-
-<div class="nav-scrollable">
-    <nav class="nav flex-column">
-
-        <!-- Home -->
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">
-                <span class="bi bi-house-door-fill-nav-menu"></span> Inicio
-            </a>
-        </div>
-
-        <!-- Módulos Principales -->
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/red') }}" href="/red">
-                <span class="bi bi-list-nested-nav-menu"></span> Redes
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/aliado') }}" href="/aliado">
-                <span class="bi bi-list-nested-nav-menu"></span> Aliados
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/docente') }}" href="/docente">
-                <span class="bi bi-list-nested-nav-menu"></span> Docentes
-            </a>
-        </div>
-
-        <!-- Tablas Intermedias -->
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/estudio_ac') }}" href="/estudio_ac">
-                <span class="bi bi-list-nested-nav-menu"></span> Estudio - Área Conoc.
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/red_docente') }}" href="/red_docente">
-                <span class="bi bi-list-nested-nav-menu"></span> Red - Docente
-            </a>
-        </div>
-
-        <!-- Tablas Dependientes -->
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/alianza') }}" href="/alianza">
-                <span class="bi bi-list-nested-nav-menu"></span> Alianzas
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/apoyo_profesoral') }}" href="/apoyo_profesoral">
-                <span class="bi bi-list-nested-nav-menu"></span> Apoyo Profesoral
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/beca') }}" href="/beca">
-                <span class="bi bi-list-nested-nav-menu"></span> Becas
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/docente_departamento') }}" href="/docente_departamento">
-                <span class="bi bi-list-nested-nav-menu"></span> Docente - Departamento
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/docentes_estudios') }}" href="/docentes_estudios">
-                <span class="bi bi-list-nested-nav-menu"></span> Docentes y Estudios
-            </a>
-        </div>
-
-        <div class="nav-item px-3">
-            <a class="nav-link {{ 'active' if request.path.startswith('/evaluacion_docente') }}" href="/evaluacion_docente">
-                <span class="bi bi-list-nested-nav-menu"></span> Evaluación Docente
-            </a>
-        </div>
-
-    </nav>
-</div>
+</nav>
