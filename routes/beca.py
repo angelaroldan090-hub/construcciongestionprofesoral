@@ -13,12 +13,13 @@ def listar():
 @beca_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
     if request.method == 'POST':
+        fecha_fin = request.form.get('fecha_fin', '').strip() or None
         data = {
-            'estudios': request.form['estudios'],
+            'estudios': int(request.form['estudios']),
             'tipo': request.form['tipo'],
             'institucion': request.form['institucion'],
             'fecha_inicio': request.form['fecha_inicio'],
-            'fecha_fin': request.form.get('fecha_fin', '')
+            'fecha_fin': fecha_fin
         }
         api_service.create('beca', data)
         return redirect(url_for('beca.listar'))
@@ -29,11 +30,12 @@ def crear():
 @beca_bp.route('/editar/<int:estudios>', methods=['GET', 'POST'])
 def editar(estudios):
     if request.method == 'POST':
+        fecha_fin = request.form.get('fecha_fin', '').strip() or None
         data = {
             'tipo': request.form['tipo'],
             'institucion': request.form['institucion'],
             'fecha_inicio': request.form['fecha_inicio'],
-            'fecha_fin': request.form.get('fecha_fin', '')
+            'fecha_fin': fecha_fin
         }
         api_service.update('beca', estudios, data)
         return redirect(url_for('beca.listar'))
