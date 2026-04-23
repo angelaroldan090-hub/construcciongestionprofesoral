@@ -8,33 +8,39 @@ from config import SECRET_KEY
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# Importar blueprints
-from routes.home import bp as home_bp
-from routes.red import bp as red_bp
-from routes.aliado import bp as aliado_bp
-from routes.docente import bp as docente_bp
-from routes.estudio_ac import bp as estudio_ac_bp
-from routes.red_docente import bp as red_docente_bp
-from routes.alianza import bp as alianza_bp
-from routes.apoyo_profesoral import bp as apoyo_profesoral_bp
-from routes.beca import bp as beca_bp
-from routes.docente_departamento import bp as docente_departamento_bp
-from routes.docentes_estudios import bp as docentes_estudios_bp
-from routes.evaluacion_docente import bp as evaluacion_docente_bp
-
-# Registrar blueprints
+    # Importar blueprints
+from routes.home import home_bp
+from routes.docente import docente_bp
+from routes.estudios_realizados import estudios_bp
+from routes.docentes_estudios import docentes_estudios_bp
+from routes.area_conocimiento import area_bp
+from routes.termino_clave import termino_bp
+from routes.linea_investigacion import linea_bp
+from routes.programa import programa_bp
+from routes.red import red_bp
+from routes.evaluacion_docente import evaluacion_bp
+from routes.reconocimiento import reconocimiento_bp
+from routes.experiencia import experiencia_bp
+from routes.red_docente import red_docente_bp
+from routes.apoyo_profesoral import apoyo_bp
+from routes.beca import beca_bp
+    
+    # Registrar blueprints
 app.register_blueprint(home_bp)
-app.register_blueprint(red_bp)
-app.register_blueprint(aliado_bp)
-app.register_blueprint(docente_bp)
-app.register_blueprint(estudio_ac_bp)
-app.register_blueprint(red_docente_bp)
-app.register_blueprint(alianza_bp)
-app.register_blueprint(apoyo_profesoral_bp)
-app.register_blueprint(beca_bp)
-app.register_blueprint(docente_departamento_bp)
-app.register_blueprint(docentes_estudios_bp)
-app.register_blueprint(evaluacion_docente_bp)
+app.register_blueprint(docente_bp, url_prefix='/docente')
+app.register_blueprint(estudios_bp, url_prefix='/estudios')
+app.register_blueprint(docentes_estudios_bp, url_prefix='/docentes_estudios')
+app.register_blueprint(area_bp, url_prefix='/area')
+app.register_blueprint(termino_bp, url_prefix='/termino')
+app.register_blueprint(linea_bp, url_prefix='/linea')
+app.register_blueprint(programa_bp, url_prefix='/programa')
+app.register_blueprint(red_bp, url_prefix='/red')
+app.register_blueprint(evaluacion_bp, url_prefix='/evaluacion')
+app.register_blueprint(reconocimiento_bp, url_prefix='/reconocimiento')
+app.register_blueprint(experiencia_bp, url_prefix='/experiencia')
+app.register_blueprint(red_docente_bp, url_prefix='/red_docente')
+app.register_blueprint(apoyo_bp, url_prefix='/apoyo')
+app.register_blueprint(beca_bp, url_prefix='/beca')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5100)
