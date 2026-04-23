@@ -19,7 +19,7 @@ def crear():
             'institucion': request.form['institucion'],
             'nombre': request.form['nombre'],
             'ambito': request.form['ambito'],
-            'docente': request.form['docente']
+            'docente': int(request.form['docente'])
         }
         api_service.create('reconocimiento', data)
         return redirect(url_for('reconocimiento.listar'))
@@ -36,7 +36,7 @@ def editar(id):
             'institucion': request.form['institucion'],
             'nombre': request.form['nombre'],
             'ambito': request.form['ambito'],
-            'docente': request.form['docente']
+            'docente': int(request.form['docente'])
         }
         api_service.update('reconocimiento', id, data)
         return redirect(url_for('reconocimiento.listar'))

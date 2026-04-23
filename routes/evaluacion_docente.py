@@ -14,9 +14,9 @@ def listar():
 def crear():
     if request.method == 'POST':
         data = {
-            'calificacion': request.form['calificacion'],
+            'calificacion': float(request.form['calificacion']),
             'semestre': request.form['semestre'],
-            'docente': request.form['docente']
+            'docente': int(request.form['docente'])
         }
         api_service.create('evaluacion_docente', data)
         return redirect(url_for('evaluacion.listar'))
@@ -28,9 +28,9 @@ def crear():
 def editar(id):
     if request.method == 'POST':
         data = {
-            'calificacion': request.form['calificacion'],
+            'calificacion': float(request.form['calificacion']),
             'semestre': request.form['semestre'],
-            'docente': request.form['docente']
+            'docente': int(request.form['docente'])
         }
         api_service.update('evaluacion_docente', id, data)
         return redirect(url_for('evaluacion.listar'))

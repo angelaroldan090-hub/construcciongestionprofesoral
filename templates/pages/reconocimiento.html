@@ -56,7 +56,7 @@
                         <td>{{ reconocimiento.docente_nombre if reconocimiento.docente_nombre else reconocimiento.docente }}</td>
                         <td>{{ reconocimiento.nombre }}</td>
                         <td>{{ reconocimiento.tipo }}</td>
-                        <td>{{ reconocimiento.fecha }}</td>
+                        <td>{{ reconocimiento.fecha.split('T')[0] if reconocimiento.fecha else '' }}</td>
                         <td>
                             <button class="btn btn-sm btn-warning" onclick="editarReconocimiento({{ reconocimiento.id }})"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-danger" onclick="eliminarReconocimiento({{ reconocimiento.id }})"><i class="fas fa-trash"></i></button>

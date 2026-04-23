@@ -13,13 +13,14 @@ def listar():
 @experiencia_bp.route('/crear', methods=['GET', 'POST'])
 def crear():
     if request.method == 'POST':
+        fecha_fin = request.form.get('fecha_fin', '').strip() or None
         data = {
             'nombre_cargo': request.form['nombre_cargo'],
             'institucion': request.form['institucion'],
             'tipo': request.form['tipo'],
             'fecha_inicio': request.form['fecha_inicio'],
-            'fecha_fin': request.form.get('fecha_fin', ''),
-            'docente': request.form['docente']
+            'fecha_fin': fecha_fin,
+            'docente': int(request.form['docente'])
         }
         api_service.create('experiecia', data)
         return redirect(url_for('experiencia.listar'))
@@ -30,13 +31,14 @@ def crear():
 @experiencia_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
     if request.method == 'POST':
+        fecha_fin = request.form.get('fecha_fin', '').strip() or None
         data = {
             'nombre_cargo': request.form['nombre_cargo'],
             'institucion': request.form['institucion'],
             'tipo': request.form['tipo'],
             'fecha_inicio': request.form['fecha_inicio'],
-            'fecha_fin': request.form.get('fecha_fin', ''),
-            'docente': request.form['docente']
+            'fecha_fin': fecha_fin,
+            'docente': int(request.form['docente'])
         }
         api_service.update('experiecia', id, data)
         return redirect(url_for('experiencia.listar'))
