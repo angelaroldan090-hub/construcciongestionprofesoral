@@ -11,8 +11,6 @@ app.secret_key = SECRET_KEY
     # Importar blueprints
 from routes.api_proxy import api_proxy_bp
 from routes.home import home_bp
-from routes.docente import docente_bp
-from routes.estudios_realizados import estudios_bp
 from routes.docentes_estudios import docentes_estudios_bp
 from routes.area_conocimiento import area_bp
 from routes.termino_clave import termino_bp
@@ -31,8 +29,6 @@ from routes.estudio_ac import estudio_ac_bp
     # Registrar blueprints
 app.register_blueprint(api_proxy_bp)
 app.register_blueprint(home_bp)
-app.register_blueprint(docente_bp, url_prefix='/docente')
-app.register_blueprint(estudios_bp, url_prefix='/estudios')
 app.register_blueprint(docentes_estudios_bp, url_prefix='/docentes_estudios')
 app.register_blueprint(area_bp, url_prefix='/area')
 app.register_blueprint(termino_bp, url_prefix='/termino')
