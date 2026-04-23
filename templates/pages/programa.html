@@ -1,0 +1,111 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Programas{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-building"></i> Programas</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nuevo Programa
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioPrograma" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Programa</h4>
+            <form method="POST" id="programaForm">
+                <input type="hidden" id="editId" name="editId">
+                <div class="row">
+                    <div class="col-md-4 mb-2"><label>ID *</label><input type="number" class="form-control" id="id" name="id" required></div>
+                    <div class="col-md-8 mb-2"><label>Nombre *</label><input type="text" class="form-control" id="nombre" name="nombre" required></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-2"><label>Tipo *</label><input type="text" class="form-control" id="tipo" name="tipo" required></div>
+                    <div class="col-md-4 mb-2"><label>Nivel *</label><input type="text" class="form-control" id="nivel" name="nivel" required></div>
+                    <div class="col-md-4 mb-2"><label>Ciudad *</label><input type="text" class="form-control" id="ciudad" name="ciudad" required></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-2"><label>Fecha Creación *</label><input type="text" class="form-control" id="fecha_creacion" name="fecha_creacion" required></div>
+                    <div class="col-md-3 mb-2"><label>Fecha Cierre</label><input type="text" class="form-control" id="fecha_cierre" name="fecha_cierre"></div>
+                    <div class="col-md-3 mb-2"><label>Nº Cohortes *</label><input type="text" class="form-control" id="numero_cohortes" name="numero_cohortes" required></div>
+                    <div class="col-md-3 mb-2"><label>Cant. Graduados *</label><input type="text" class="form-control" id="cant_graduados" name="cant_graduados" required></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Fecha Actualización *</label><input type="text" class="form-control" id="fecha_actualizacion" name="fecha_actualizacion" required></div>
+                    <div class="col-md-6 mb-2"><label>Facultad *</label><input type="number" class="form-control" id="facultad" name="facultad" required></div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Nivel</th><th>Ciudad</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for programa in programas %}
+                    <tr>
+                        <td>{{ programa.id }}</td>
+                        <td>{{ programa.nombre }}</td>
+                        <td>{{ programa.tipo }}</td>
+                        <td>{{ programa.nivel }}</td>
+                        <td>{{ programa.ciudad }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarPrograma({{ programa.id }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarPrograma({{ programa.id }})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarFormulario() {
+    document.getElementById('formularioPrograma').style.display = 'block';
+    document.getElementById('formTitulo').innerText = 'Nuevo Programa';
+    document.getElementById('programaForm').reset();
+    document.getElementById('editId').value = '';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioPrograma').style.display = 'none';
+}
+
+function editarPrograma(id) {
+    fetch(`/api/programa/${id}`).then(r=>r.json()).then(data=>{
+        document.getElementById('editId').value=data.id;
+        document.getElementById('id').value=data.id;
+        document.getElementById('nombre').value=data.nombre;
+        document.getElementById('tipo').value=data.tipo;
+        document.getElementById('nivel').value=data.nivel;
+        document.getElementById('ciudad').value=data.ciudad;
+        document.getElementById('fecha_creacion').value=data.fecha_creacion;
+        document.getElementById('fecha_cierre').value=data.fecha_cierre||'';
+        document.getElementById('numero_cohortes').value=data.numero_cohortes;
+        document.getElementById('cant_graduados').value=data.cant_graduados;
+        document.getElementById('fecha_actualizacion').value=data.fecha_actualizacion;
+        document.getElementById('facultad').value=data.facultad;
+        document.getElementById('formTitulo').innerText='Editar Programa';
+        document.getElementById('formularioPrograma').style.display='block';
+    });
+}
+
+function eliminarPrograma(id) {
+    if(confirm('¿Está seguro?')) window.location.href=`/programa/eliminar/${id}`;
+}
+
+document.getElementById('programaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId=document.getElementById('editId').value;
+    const url=editId?`/programa/editar/${editId}`:'/programa/crear';
+    fetch(url,{method:'POST',body:new FormData(this)}).then(()=>{window.location.reload();});
+});
+</script>
+{% endblock %}

@@ -1,122 +1,24 @@
-"""
-estudio_ac.py - Blueprint para la tabla intermedia estudio_ac (N:N entre estudios_realizados y area_conocimiento)
-"""
+from flask import Blueprint, render_template, request, redirect, url_for
+from services.api_service import APIService
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from services.api_service import ApiService
+estudio_ac_bp = Blueprint('estudio_ac', __name__)
+api_service = APIService()
 
-bp = Blueprint('estudio_ac', __name__)
-api = ApiService()
+@estudio_ac_bp.route('/')
+def listar():
+    relaciones = api_service.get_all('estudio_ac')
+    return render_template('pages/estudio_ac.html', relaciones=relaciones)
 
-TABLA = 'estudio_ac'
-CLAVE_COMPUESTA = ['estudio', 'area_conocimiento']
-
-@bp.route('/estudio_ac')
-def index():
-    limite = request.args.get('limite', type=int)
-    registros = api.listar(TABLA, limite)
-    
-    # Obtener datos para selects
-    estudios = api.listar('estudios_realizados')
-    areas_conocimiento = api.listar('area_conocimiento')
-    
-    # Manejo de formulario modal
-    accion = request.args.get('accion')
-    clave = request.args.get('clave')
-    mostrar_formulario = False
-    editando = False
-    registro = None
-    
-    if accion == 'nuevo':
-        mostrar_formulario = True
-        editando = False
-    elif accion == 'editar' and clave:
-        try:
-            estudio_id, area_id = clave.split('|')
-            # Buscar el registro correspondiente
-            for r in registros:
-                if str(r.get('estudio')) == str(estudio_id) and str(r.get('area_conocimiento')) == str(area_id):
-                    registro = r
-                    break
-            mostrar_formulario = True
-            editando = True
-        except Exception:
-            pass
-    
-    return render_template('pages/estudio_ac.html',
-        registros=registros,
-        mostrar_formulario=mostrar_formulario,
-        editando=editando,
-        registro=registro,
-        limite=limite,
-        estudios=estudios,
-        areas_conocimiento=areas_conocimiento
-    )
-
-@bp.route('/estudio_ac/crear', methods=['POST'])
+@estudio_ac_bp.route('/crear', methods=['POST'])
 def crear():
-    estudio = request.form.get('estudio', '')
-    area_conocimiento = request.form.get('area_conocimiento', '')
-    
-    # Validar y convertir IDs a int
-    try:
-        estudio_id = int(estudio)
-        area_id = int(area_conocimiento)
-    except (ValueError, TypeError):
-        flash('IDs inválidos.', 'danger')
-        return redirect(url_for('estudio_ac.index'))
-    
-    datos = {
-        'estudio': estudio_id,
-        'area_conocimiento': area_id
+    data = {
+        'estudio': request.form['estudio'],
+        'area_conocimiento': request.form['area_conocimiento']
     }
-    
-    exito, mensaje = api.crear(TABLA, datos)
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('estudio_ac.index'))
+    api_service.create('estudio_ac', data)
+    return redirect(url_for('estudio_ac.listar'))
 
-@bp.route('/estudio_ac/actualizar', methods=['POST'])
-def actualizar():
-    estudio = request.form.get('estudio', '')
-    area_conocimiento = request.form.get('area_conocimiento', '')
-    
-    # Validar y convertir IDs
-    try:
-        estudio_id = int(estudio)
-        area_id = int(area_conocimiento)
-    except (ValueError, TypeError):
-        flash('IDs inválidos.', 'danger')
-        return redirect(url_for('estudio_ac.index'))
-    
-    # Para claves compuestas, usar DELETE + CREATE
-    exito_eliminar, _ = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio_id, area_id])
-    
-    if exito_eliminar:
-        datos = {
-            'estudio': estudio_id,
-            'area_conocimiento': area_id
-        }
-        exito_crear, mensaje = api.crear(TABLA, datos)
-        flash('Registro actualizado exitosamente.' if exito_crear else f'Error: {mensaje}',
-              'success' if exito_crear else 'danger')
-    else:
-        flash('Error al actualizar el registro.', 'danger')
-    
-    return redirect(url_for('estudio_ac.index'))
-
-@bp.route('/estudio_ac/eliminar', methods=['POST'])
-def eliminar():
-    estudio = request.form.get('estudio', '')
-    area_conocimiento = request.form.get('area_conocimiento', '')
-    
-    # Validar y convertir IDs
-    try:
-        estudio_id = int(estudio)
-        area_id = int(area_conocimiento)
-    except (ValueError, TypeError):
-        flash('IDs inválidos.', 'danger')
-        return redirect(url_for('estudio_ac.index'))
-    
-    exito, mensaje = api.eliminar_compuesta(TABLA, ['estudio', 'area_conocimiento'], [estudio_id, area_id])
-    flash(mensaje, 'success' if exito else 'danger')
-    return redirect(url_for('estudio_ac.index'))
+@estudio_ac_bp.route('/eliminar/<int:estudio>/<int:area_conocimiento>')
+def eliminar(estudio, area_conocimiento):
+    api_service.delete_estudio_ac(estudio, area_conocimiento)
+    return redirect(url_for('estudio_ac.listar'))

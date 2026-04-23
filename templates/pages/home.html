@@ -1,145 +1,103 @@
 {% extends "layout/base.html" %}
 
-{% block title %}Inicio - Sistema de Gestión Profesoral{% endblock %}
-
-{% block extra_css %}
-<style>
-    .hero-home {
-        background: linear-gradient(135deg, #0d6efd 0%, #6610f2 55%, #6f42c1 100%);
-        color: #ffffff;
-        border-radius: 28px;
-        padding: 3rem 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .hero-home::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 35%);
-        pointer-events: none;
-    }
-
-    .hero-home .icon-bg {
-        font-size: 5rem;
-        opacity: 0.16;
-        position: absolute;
-        top: 1rem;
-        right: 1.5rem;
-    }
-
-    .hero-home h1,
-    .hero-home p,
-    .hero-home .btn {
-        position: relative;
-        z-index: 1;
-    }
-
-    .module-card {
-        transition: transform .2s ease, box-shadow .2s ease;
-    }
-
-    .module-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 18px 40px rgba(60, 72, 88, .12);
-    }
-
-    .module-card .icon {
-        width: 54px;
-        height: 54px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 14px;
-        margin-bottom: 1rem;
-    }
-
-    .quick-links .btn {
-        min-width: 175px;
-    }
-</style>
-{% endblock %}
+{% block title %}Inicio{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="hero-home mb-5 text-center">
-        <span class="icon-bg fas fa-university"></span>
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <i class="fas fa-layer-group fa-3x mb-3"></i>
-                <h1 class="display-5 fw-bold">Bienvenido al Sistema de Gestión Profesoral</h1>
-                <p class="lead text-white-75 mx-auto mb-4">Organiza y navega fácilmente entre redes, docentes, alianzas y relaciones académicas desde un solo lugar.</p>
-                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 quick-links">
-                    <a href="/red" class="btn btn-light btn-lg shadow-sm">Redes Académicas</a>
-                    <a href="/docente" class="btn btn-outline-light btn-lg shadow-sm">Docentes</a>
-                    <a href="/red_docente" class="btn btn-outline-light btn-lg shadow-sm">Red - Docente</a>
-                    <a href="/docentes_estudios" class="btn btn-outline-light btn-lg shadow-sm"><i class="fas fa-graduation-cap me-1"></i>Docentes y Estudios</a>
-                </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center py-5">
+                <h1 class="display-4">
+                    <i class="fas fa-chalkboard-user"></i> Sistema de Gestión Profesoral
+                </h1>
+                <p class="lead">Administración integral de docentes, estudios, redes e investigación</p>
+                <hr class="my-4 bg-light">
+                <p>Seleccione una opción del menú para comenzar</p>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row mb-4">
-        <div class="col-lg-10 mx-auto text-center">
-            <h2 class="h3 mb-3">Explora los módulos disponibles</h2>
-            <p class="text-muted">Accede con un solo clic a cada categoría y avanza en la gestión académica.</p>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-md-6 col-xl-4">
-            <div class="card module-card h-100 border-0 shadow-sm p-4">
-                <div class="icon bg-primary text-white mb-3">
-                    <i class="fas fa-star"></i>
-                </div>
-                <h5 class="mb-2">Módulos principales</h5>
-                <p class="text-muted">Controla los elementos base de la plataforma: redes, aliados y docentes.</p>
-                <ul class="list-unstyled mb-0">
-                    <li><a href="/red" class="text-decoration-none">Redes Académicas</a></li>
-                    <li><a href="/aliado" class="text-decoration-none">Aliados</a></li>
-                    <li><a href="/docente" class="text-decoration-none">Docentes</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-4">
-            <div class="card module-card h-100 border-0 shadow-sm p-4">
-                <div class="icon bg-success text-white mb-3">
-                    <i class="fas fa-project-diagram"></i>
-                </div>
-                <h5 class="mb-2">Relaciones N:N</h5>
-                <p class="text-muted">Gestiona conexiones entre áreas, redes y docentes de forma ágil.</p>
-                <ul class="list-unstyled mb-0">
-                    <li><a href="/estudio_ac" class="text-decoration-none">Estudio - Área Conoc.</a></li>
-                    <li><a href="/red_docente" class="text-decoration-none">Red - Docente</a></li>
-                    <li><a href="/docente_departamento" class="text-decoration-none">Docente - Departamento</a></li>
-                    <li><a href="/docentes_estudios" class="text-decoration-none fw-semibold text-primary"><i class="fas fa-graduation-cap me-1"></i>Docentes y Estudios (Maestro-Detalle)</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-4">
-            <div class="card module-card h-100 border-0 shadow-sm p-4">
-                <div class="icon bg-warning text-white mb-3">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-                <h5 class="mb-2">Tablas dependientes</h5>
-                <p class="text-muted">Registra apoyos, becas, alianzas y evaluaciones vinculadas a los docentes.</p>
-                <ul class="list-unstyled mb-0">
-                    <li><a href="/alianza" class="text-decoration-none">Alianzas</a></li>
-                    <li><a href="/apoyo_profesoral" class="text-decoration-none">Apoyo Profesoral</a></li>
-                    <li><a href="/beca" class="text-decoration-none">Becas</a></li>
-                    <li><a href="/evaluacion_docente" class="text-decoration-none">Evaluación Docente</a></li>
-                </ul>
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-user-tie fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Docentes</h5>
+                <p class="card-text small">Gestión completa de docentes</p>
+                <a href="{{ url_for('docente.listar') }}" class="btn btn-primary btn-sm">Ir</a>
             </div>
         </div>
     </div>
-
-    <div class="row mt-5">
-        <div class="col-lg-8 mx-auto text-center">
-            <div class="alert alert-primary shadow-sm" role="alert">
-                <strong>Tip:</strong> usa los accesos rápidos para iniciar en los módulos más usados o navega por el menú para encontrar cualquier tabla.
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Estudios</h5>
+                <p class="card-text small">Estudios realizados</p>
+                <a href="{{ url_for('estudios.listar') }}" class="btn btn-success btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-network-wired fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Redes</h5>
+                <p class="card-text small">Redes de investigación</p>
+                <a href="{{ url_for('red.listar') }}" class="btn btn-info btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Docentes-Estudios</h5>
+                <p class="card-text small">Relación docente-estudio</p>
+                <a href="{{ url_for('docentes_estudios.listar') }}" class="btn btn-warning btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-project-diagram fa-3x text-secondary mb-3"></i>
+                <h5 class="card-title">Líneas Investigación</h5>
+                <p class="card-text small">Líneas de investigación</p>
+                <a href="{{ url_for('linea.listar') }}" class="btn btn-secondary btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-trophy fa-3x text-danger mb-3"></i>
+                <h5 class="card-title">Reconocimientos</h5>
+                <p class="card-text small">Reconocimientos docentes</p>
+                <a href="{{ url_for('reconocimiento.listar') }}" class="btn btn-danger btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-briefcase fa-3x text-dark mb-3"></i>
+                <h5 class="card-title">Experiencias</h5>
+                <p class="card-text small">Experiencias laborales</p>
+                <a href="{{ url_for('experiencia.listar') }}" class="btn btn-dark btn-sm">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-star fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Evaluaciones</h5>
+                <p class="card-text small">Evaluaciones docentes</p>
+                <a href="{{ url_for('evaluacion.listar') }}" class="btn btn-primary btn-sm">Ir</a>
             </div>
         </div>
     </div>

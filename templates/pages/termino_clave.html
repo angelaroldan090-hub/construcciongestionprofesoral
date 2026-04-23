@@ -1,0 +1,93 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Términos Clave{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-key"></i> Términos Clave</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nuevo Término
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioTermino" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Término Clave</h4>
+            <form method="POST" id="terminoForm">
+                <input type="hidden" id="editTermino" name="editTermino">
+                <div class="mb-2">
+                    <label>Término *</label>
+                    <input type="text" class="form-control" id="termino" name="termino" required>
+                </div>
+                <div class="mb-2">
+                    <label>Término (Inglés)</label>
+                    <input type="text" class="form-control" id="termino_ingles" name="termino_ingles">
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>Término</th><th>Término (Inglés)</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for termino in terminos %}
+                    <tr>
+                        <td>{{ termino.termino }}</td>
+                        <td>{{ termino.termino_ingles or 'N/A' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarTermino('{{ termino.termino }}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarTermino('{{ termino.termino }}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarFormulario() {
+    document.getElementById('formularioTermino').style.display = 'block';
+    document.getElementById('formTitulo').innerText = 'Nuevo Término Clave';
+    document.getElementById('terminoForm').reset();
+    document.getElementById('editTermino').value = '';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioTermino').style.display = 'none';
+}
+
+function editarTermino(termino) {
+    fetch(`/api/termino_clave/${termino}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editTermino').value = data.termino;
+            document.getElementById('termino').value = data.termino;
+            document.getElementById('termino_ingles').value = data.termino_ingles || '';
+            document.getElementById('formTitulo').innerText = 'Editar Término Clave';
+            document.getElementById('formularioTermino').style.display = 'block';
+        });
+}
+
+function eliminarTermino(termino) {
+    if(confirm('¿Está seguro?')) {
+        window.location.href = `/termino/eliminar/${termino}`;
+    }
+}
+
+document.getElementById('terminoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editTermino = document.getElementById('editTermino').value;
+    const url = editTermino ? `/termino/editar/${editTermino}` : '/termino/crear';
+    const formData = new FormData(this);
+    fetch(url, { method: 'POST', body: formData }).then(() => { window.location.reload(); });
+});
+</script>
+{% endblock %}
