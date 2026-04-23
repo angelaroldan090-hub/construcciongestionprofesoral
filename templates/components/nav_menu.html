@@ -13,8 +13,7 @@
                         <i class="fas fa-user-tie"></i> Docentes
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('docente.listar') }}">Docentes</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('docentes_estudios.listar') }}">Docentes - Estudios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('docentes_estudios.listar') }}">Docentes y Estudios</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('evaluacion.listar') }}">Evaluaciones</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('reconocimiento.listar') }}">Reconocimientos</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('experiencia.listar') }}">Experiencias</a></li>
@@ -26,7 +25,6 @@
                         <i class="fas fa-graduation-cap"></i> Estudios
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('estudios.listar') }}">Estudios Realizados</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('area.listar') }}">Áreas de Conocimiento</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('apoyo.listar') }}">Apoyos Profesorales</a></li>
                         <li><a class="dropdown-item" href="{{ url_for('beca.listar') }}">Becas</a></li>
