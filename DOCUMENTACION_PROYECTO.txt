@@ -1,0 +1,374 @@
+================================================================================
+  DOCUMENTACION DEL PROYECTO: FrontFlask + ApiGenericaCsharp
+  Base de datos: mapaConocimiento (PostgreSQL)
+  Fecha: Abril 2026
+================================================================================
+
+--------------------------------------------------------------------------------
+1. DESCRIPCION GENERAL DEL PROYECTO
+--------------------------------------------------------------------------------
+
+Este proyecto es un FRONTEND desarrollado en Python con el framework Flask.
+Consume una API REST generica desarrollada en C# (ApiGenericaCsharp) que corre
+en el puerto 5035. La base de datos es PostgreSQL con el nombre "mapaConocimiento".
+
+La aplicacion permite gestionar informacion academica de docentes universitarios:
+sus estudios realizados, areas de conocimiento, lineas de investigacion,
+programas, redes de investigacion, evaluaciones, reconocimientos, experiencias,
+apoyos profesorales, becas y relaciones departamentales.
+
+Arquitectura:
+  - Frontend : Flask (Python) - puerto 5100
+  - Backend  : API REST generica en C# - puerto 5035
+  - BD       : PostgreSQL - puerto 5432 - base: mapaConocimiento
+  - Conexion directa BD: psycopg2 (solo para llamar Stored Procedures / SPs)
+
+--------------------------------------------------------------------------------
+2. ESTRUCTURA DEL PROYECTO
+--------------------------------------------------------------------------------
+
+  app.py                  -> Punto de entrada Flask. Registra todos los Blueprints.
+  config.py               -> Configuracion centralizada (URL de la API, clave secreta,
+                             parametros de conexion DB via variables de entorno .env)
+  services/
+    api_service.py        -> Clase APIService: metodos CRUD genericos y llamada a SPs.
+  routes/
+    *.py                  -> Un Blueprint por modulo (tabla/entidad).
+  templates/
+    layout/base.html      -> Layout base (herencia de plantillas Jinja2).
+    components/           -> Componentes reutilizables (nav_menu).
+    pages/                -> Una pagina HTML por modulo.
+  static/css/app.css      -> Estilos globales.
+  scripts_bds/            -> Scripts SQL utilitarios y fixes de SPs.
+
+--------------------------------------------------------------------------------
+3. CLASE APIService (services/api_service.py)
+--------------------------------------------------------------------------------
+
+Es la clase central que encapsula TODA comunicacion con el backend.
+Se instancia una vez por Blueprint: api_service = APIService()
+
+METODOS CRUD (via HTTP a la API C#):
+--------------------------------------
+
+  listar(tabla, limite=None)
+    GET /api/{tabla}
+    Retorna lista de registros o [] si hay error / tabla vacia (HTTP 204).
+
+  crear(tabla, datos) / create(tabla, datos)
+    POST /api/{tabla}  con body JSON
+    Retorna (exito: bool, mensaje: str)
+
+  actualizar(tabla, nombre_clave, valor_clave, datos) / update(tabla, id_valor, datos)
+    PUT /api/{tabla}/{campo}/{valor}
+    El metodo update() busca el nombre del campo PK en el mapa _PK_MAP.
+    Retorna (exito: bool, mensaje: str)
+
+  eliminar(tabla, nombre_clave, valor_clave) / delete(tabla, id_valor)
+    DELETE /api/{tabla}/{campo}/{valor}
+    Retorna (exito: bool, mensaje: str)
+
+  get_all(tabla)
+    Alias de listar(). Retorna lista.
+
+  get_one(tabla, id_valor)
+    GET /api/{tabla}/{id_valor}
+    Retorna el registro como dict o None si no existe.
+
+  ejecutar_sp(nombre_sp, parametros)
+    POST /api/procedimientos/ejecutarsp
+    Ejecuta un SP via el endpoint de la API C#.
+    Retorna (exito: bool, resultado)
+
+MAPA DE CLAVES PRIMARIAS (_PK_MAP):
+  docente              -> cedula
+  area_conocimiento    -> id
+  linea_investigacion  -> id
+  programa             -> id
+  red                  -> idr
+  evaluacion_docente   -> id
+  reconocimiento       -> id
+  experiencia          -> id
+  estudios_realizados  -> id
+  termino_clave        -> termino
+  apoyo_profesoral     -> estudios
+  beca                 -> estudios
+
+--------------------------------------------------------------------------------
+4. METODO ESPECIAL: llamar_sp() - CONEXION DIRECTA A PostgreSQL
+--------------------------------------------------------------------------------
+
+  def llamar_sp(self, nombre_funcion, params: list)
+
+Este metodo NO usa la API C#. Conecta DIRECTAMENTE a PostgreSQL via psycopg2
+para ejecutar funciones/procedimientos almacenados que requieren logica compleja
+(CRUD de tablas con claves compuestas, maestro-detalle, etc.).
+
+Funcionamiento:
+  1. Abre conexion a PostgreSQL usando DB_CONFIG de config.py
+     (host, port, database, user, password - leidos del archivo .env)
+  2. Construye la llamada: SELECT * FROM nombre_funcion(param1, param2, ...)
+  3. Obtiene el resultado JSONB del primer campo retornado
+  4. Si el resultado contiene la clave "error", retorna (False, mensaje_error)
+  5. Si todo sale bien, retorna (True, resultado) donde resultado puede ser
+     un dict, una lista, u otro tipo segun lo que retorne la funcion PostgreSQL.
+
+Uso en los routes:
+  exito, resultado = api_service.llamar_sp('sp_crud_ejemplo', ['LISTAR'])
+  exito, resultado = api_service.llamar_sp('sp_crud_ejemplo', ['INSERT', val1, val2])
+  exito, resultado = api_service.llamar_sp('sp_crud_ejemplo', ['UPDATE', val1, val2, ...])
+  exito, resultado = api_service.llamar_sp('sp_crud_ejemplo', ['DELETE', val1, val2, ...])
+
+--------------------------------------------------------------------------------
+5. STORED PROCEDURES / FUNCIONES PostgreSQL UTILIZADOS
+--------------------------------------------------------------------------------
+
+Todos los SPs reciben un parametro de ACCION como primer argumento
+('LISTAR', 'INSERT', 'UPDATE', 'DELETE') y retornan JSONB.
+
+----- 5.1  sp_crud_docentes_estudios -----
+Tabla intermedia: (docente, estudio) - clave compuesta
+Parametros segun accion:
+  LISTAR  -> sp_crud_docentes_estudios('LISTAR')
+             Retorna lista de relaciones docente-estudio.
+  INSERT  -> sp_crud_docentes_estudios('INSERT', cedula_docente, id_estudio)
+             Crea una nueva asignacion de estudio a docente.
+  DELETE  -> sp_crud_docentes_estudios('DELETE', cedula_docente, id_estudio)
+             Elimina una asignacion docente-estudio.
+Usado en: routes/docentes_estudios.py (funciones asignar, desasignar)
+
+----- 5.2  sp_listar_docentes_y_estudios -----
+Funcion especial de consulta maestro-detalle.
+Parametros: ninguno
+Retorna: JSONB con lista de docentes, cada uno incluyendo su arreglo de estudios
+         ordenados por fecha DESC.
+Nota historica: Esta funcion tenia un BUG de ORDER BY fuera del contexto de
+  agregacion (jsonb_agg). Fue corregida con subconsulta y ORDER BY cedula_orden.
+  El fix esta en: scripts_bds/fix_sp_listar_docentes_y_estudios.sql
+Script corregido:
+  CREATE OR REPLACE FUNCTION public.sp_listar_docentes_y_estudios(OUT p_resultado jsonb)
+  Usa subconsulta interna con jsonb_agg(registro ORDER BY cedula_orden) para
+  evitar el error "argument of ORDER BY must not contain aggregate functions".
+
+----- 5.3  sp_crud_estudio_ac -----
+Tabla intermedia: estudio_ac (estudio, area_conocimiento) - clave compuesta
+Parametros segun accion:
+  LISTAR  -> sp_crud_estudio_ac('LISTAR')
+             Retorna lista con campos: estudio, area_conocimiento,
+             gran_area, area_nombre, disciplina.
+  INSERT  -> sp_crud_estudio_ac('INSERT', id_estudio, id_area_conocimiento)
+             Crea relacion estudio - area de conocimiento.
+  DELETE  -> sp_crud_estudio_ac('DELETE', id_estudio, id_area_conocimiento)
+             Elimina relacion estudio - area de conocimiento.
+Usado en: routes/estudio_ac.py
+
+----- 5.4  sp_crud_docente_departamento -----
+Tabla intermedia: docente_departamento (docente, departamento) - clave compuesta
+Atributos adicionales: dedicacion, modalidad, fecha_ingreso, fecha_salida
+Parametros segun accion:
+  LISTAR  -> sp_crud_docente_departamento('LISTAR')
+             Retorna lista de asignaciones docente-departamento.
+  INSERT  -> sp_crud_docente_departamento('INSERT', docente, departamento,
+                                          dedicacion, modalidad,
+                                          fecha_ingreso, fecha_salida)
+  UPDATE  -> sp_crud_docente_departamento('UPDATE', docente, departamento,
+                                          dedicacion, modalidad,
+                                          fecha_ingreso, fecha_salida)
+  DELETE  -> sp_crud_docente_departamento('DELETE', docente, departamento,
+                                          None, None, None, None)
+             (Los 4 ultimos parametros son NULL en DELETE)
+Usado en: routes/docente_departamento.py
+
+----- 5.5  sp_crud_red_docente -----
+Tabla intermedia: red_docente (red, docente) - clave compuesta
+Atributos adicionales: fecha_inicio, fecha_fin, act_destacadas
+Parametros segun accion:
+  LISTAR  -> sp_crud_red_docente('LISTAR')
+             Retorna lista con red, docente, fechas y actividades.
+  INSERT  -> sp_crud_red_docente('INSERT', red, docente,
+                                  fecha_inicio, fecha_fin, act_destacadas)
+  UPDATE  -> sp_crud_red_docente('UPDATE', red, docente,
+                                  fecha_inicio, fecha_fin, act_destacadas)
+  DELETE  -> sp_crud_red_docente('DELETE', red, docente, None, None, None)
+Usado en: routes/red_docente.py
+
+--------------------------------------------------------------------------------
+6. PATRON CRUD PARA TABLAS CON CLAVES COMPUESTAS
+--------------------------------------------------------------------------------
+
+PROBLEMA:
+  La API generica C# NO soporta PUT/DELETE con claves compuestas en ruta.
+  Solo acepta: PUT /api/{tabla}/{campo}/{valor} (un solo campo PK).
+
+SOLUCION IMPLEMENTADA:
+  Para las tablas con claves compuestas se usan STORED PROCEDURES directamente
+  via llamar_sp(). Esto evita el problema de la API C# y permite operaciones
+  INSERT, UPDATE y DELETE con multiples claves en una sola llamada transaccional.
+
+  Si NO existiera SP disponible, el patron alternativo era:
+    - Actualizar = DELETE (query string) + POST (recrear con nuevos datos)
+    - Eliminar   = DELETE con query string: /api/tabla?campo1=val1&campo2=val2
+
+TABLAS AFECTADAS (todas usan SP):
+  - red_docente          (red + docente)
+  - docente_departamento (docente + departamento)
+  - estudio_ac           (estudio + area_conocimiento)
+  - docentes_estudios    (docente + estudio)  <- tabla intermedia sin atributos
+
+--------------------------------------------------------------------------------
+7. MODULOS / BLUEPRINTS DEL FRONTEND
+--------------------------------------------------------------------------------
+
+Cada Blueprint tiene su propio archivo en routes/ y su pagina HTML en templates/pages/.
+Todos los Blueprints siguen el mismo patron:
+
+  GET  /{modulo}/          -> listar()     - muestra tabla con registros
+  POST /{modulo}/crear     -> crear()      - crea nuevo registro
+  POST /{modulo}/editar/ID -> editar()     - actualiza registro existente
+  GET  /{modulo}/eliminar/ID -> eliminar() - elimina registro
+
+Lista de Blueprints registrados:
+  /                          -> home_bp           (home.py)
+  /docentes_estudios/        -> docentes_estudios_bp
+  /area/                     -> area_bp            (area_conocimiento.py)
+  /termino/                  -> termino_bp         (termino_clave.py)
+  /linea/                    -> linea_bp           (linea_investigacion.py)
+  /programa/                 -> programa_bp        (programa.py)
+  /red/                      -> red_bp             (red.py)
+  /evaluacion/               -> evaluacion_bp      (evaluacion_docente.py)
+  /reconocimiento/           -> reconocimiento_bp  (reconocimiento.py)
+  /experiencia/              -> experiencia_bp     (experiencia.py)
+  /red_docente/              -> red_docente_bp     (red_docente.py)
+  /apoyo/                    -> apoyo_bp           (apoyo_profesoral.py)
+  /beca/                     -> beca_bp            (beca.py)
+  /docente_departamento/     -> docente_departamento_bp
+  /estudio_ac/               -> estudio_ac_bp      (estudio_ac.py)
+  /api/                      -> api_proxy_bp       (api_proxy.py)
+
+--------------------------------------------------------------------------------
+8. MODULO DOCENTES_ESTUDIOS (el mas complejo)
+--------------------------------------------------------------------------------
+
+Este modulo maneja TRES entidades en una sola pantalla:
+  1. Tabla "docente"              -> CRUD completo via API C# (clave: cedula)
+  2. Tabla "estudios_realizados"  -> CRUD completo via API C# (clave: id)
+  3. Tabla intermedia "docentes_estudios" -> CRUD via SP (clave compuesta)
+
+Campos del docente:
+  cedula, nombres, apellidos, genero, cargo, fecha_nacimiento, correo,
+  telefono, url_cvlac, fecha_actualizacion, escalafon, perfil,
+  cat_minciencia, conv_minciencia, nacionalidaad (typo en BD),
+  linea_investigacion_principal
+
+Nota: El campo "nacionalidaad" (con doble 'a') es un typo que existe en la
+estructura real de la base de datos y debe mantenerse para compatibilidad.
+
+Campos del estudio_realizado:
+  id, titulo, universidad, fecha, tipo, ciudad, docente (FK), ins_acreditada,
+  metodologia, perfil_egresado, pais
+
+Rutas del Blueprint:
+  GET  /docentes_estudios/           -> listar()
+  POST /docentes_estudios/docente/crear       -> docente_crear()
+  POST /docentes_estudios/docente/editar/<cedula> -> docente_editar()
+  GET  /docentes_estudios/docente/eliminar/<cedula> -> docente_eliminar()
+  POST /docentes_estudios/estudio/crear       -> estudio_crear()
+  POST /docentes_estudios/estudio/editar/<id> -> estudio_editar()
+  GET  /docentes_estudios/estudio/eliminar/<id> -> estudio_eliminar()
+  POST /docentes_estudios/asignar             -> asignar()     (usa SP INSERT)
+  GET  /docentes_estudios/desasignar/<d>/<e>  -> desasignar()  (usa SP DELETE)
+
+--------------------------------------------------------------------------------
+9. SCRIPTS SQL IMPORTANTES
+--------------------------------------------------------------------------------
+
+scripts_bds/fix_sp_listar_docentes_y_estudios.sql
+  Fix para la funcion sp_listar_docentes_y_estudios.
+  Problema original: ORDER BY d.cedula fuera del contexto de jsonb_agg generaba
+    error "argument of ORDER BY must not contain aggregate functions".
+  Solucion: envolver la consulta principal en una subconsulta y usar
+    jsonb_agg(registro ORDER BY cedula_orden)
+    donde cedula_orden es un alias de d.cedula expuesto en la subconsulta.
+  Tambien ordena los estudios de cada docente por: fecha DESC NULLS LAST, id DESC.
+
+scripts_bds/script_bdfacturas_postgres_local.sql
+  Script de la base de datos de facturas (proyecto de referencia / practica).
+  Contiene triggers, SPs maestro-detalle para: factura/productos, empresa/cliente.
+  Trigger "actualizar_totales_y_stock": recalcula subtotales, totales y stock
+    automaticamente en INSERT, UPDATE y DELETE de productosporfactura.
+
+--------------------------------------------------------------------------------
+10. CONFIGURACION Y VARIABLES DE ENTORNO
+--------------------------------------------------------------------------------
+
+Archivo .env (NO se sube al repositorio):
+  DB_HOST=localhost
+  DB_PORT=5432
+  DB_NAME=mapaConocimiento
+  DB_USER=postgres
+  DB_PASSWORD=<password>
+
+Archivo config.py:
+  API_BASE_URL = "http://localhost:5035"   <- URL de la API C#
+  SECRET_KEY   = "clave-secreta-..."       <- Clave para sesiones Flask
+  DB_CONFIG    = { host, port, database, user, password }  <- Para psycopg2
+
+Para ejecutar la aplicacion:
+  1. Activar entorno virtual: venv\Scripts\Activate.ps1
+  2. Asegurarse que la API C# este corriendo en puerto 5035
+  3. Asegurarse que PostgreSQL este corriendo en puerto 5432
+  4. Ejecutar: python app.py
+  5. Acceder a: http://localhost:5100
+
+--------------------------------------------------------------------------------
+11. PROBLEMAS CONOCIDOS Y SOLUCIONES APLICADAS
+--------------------------------------------------------------------------------
+
+PROBLEMA 1: SP con ORDER BY fuera de contexto de agregacion
+  SP: sp_listar_docentes_y_estudios
+  Error: "argument of ORDER BY must not contain aggregate functions"
+  Causa: ORDER BY d.cedula colocado directamente en jsonb_agg() sin subconsulta.
+  Solucion: Subconsulta expone d.cedula AS cedula_orden; luego la consulta
+            externa usa jsonb_agg(registro ORDER BY cedula_orden).
+  Archivo de fix: scripts_bds/fix_sp_listar_docentes_y_estudios.sql
+
+PROBLEMA 2: API C# no soporta claves compuestas en PUT/DELETE
+  Tablas afectadas: red_docente, docente_departamento, estudio_ac, docentes_estudios
+  Causa: La API generica solo acepta un campo PK en la URL.
+  Solucion: Usar Stored Procedures directamente via psycopg2 (metodo llamar_sp).
+            Los SPs manejan INSERT/UPDATE/DELETE en una sola transaccion.
+
+PROBLEMA 3: Typo en nombre de columna en tabla docente
+  Campo: "nacionalidaad" (doble 'a')
+  Causa: Error original en el script de creacion de la BD.
+  Solucion: Mantener el typo en todo el codigo Python para compatibilidad.
+
+PROBLEMA 4: Tabla vacia retorna HTTP 204 en lugar de 200+[]
+  Causa: Comportamiento de la API C# generica.
+  Solucion: En APIService.listar() se maneja explicitamente status_code == 204
+            retornando [] sin generar error.
+
+--------------------------------------------------------------------------------
+12. RELACIONES ENTRE TABLAS (FK relevantes)
+--------------------------------------------------------------------------------
+
+  docente.linea_investigacion_principal  -> linea_investigacion.id
+  estudios_realizados.docente            -> docente.cedula
+  estudio_ac.estudio                     -> estudios_realizados.id
+  estudio_ac.area_conocimiento           -> area_conocimiento.id
+  docentes_estudios.docente              -> docente.cedula
+  docentes_estudios.estudio              -> estudios_realizados.id
+  docente_departamento.docente           -> docente.cedula
+  docente_departamento.departamento      -> programa.id  (o tabla departamento)
+  red_docente.red                        -> red.idr
+  red_docente.docente                    -> docente.cedula
+  evaluacion_docente.docente             -> docente.cedula  (implicita)
+  reconocimiento.docente                 -> docente.cedula  (implicita)
+  experiencia.docente                    -> docente.cedula  (implicita)
+  apoyo_profesoral.estudios              -> estudios_realizados.id
+  beca.estudios                          -> estudios_realizados.id
+  termino_clave.linea_investigacion      -> linea_investigacion.id  (implicita)
+
+================================================================================
+  FIN DE LA DOCUMENTACION
+================================================================================
