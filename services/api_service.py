@@ -316,7 +316,9 @@ class APIService:
         import psycopg2
         from config import DB_CONFIG
         try:
-            conn = psycopg2.connect(**DB_CONFIG)
+            # Agregar client_encoding para asegurar UTF-8
+            db_config = {**DB_CONFIG, 'client_encoding': 'UTF8'}
+            conn = psycopg2.connect(**db_config)
             cur = conn.cursor()
             placeholders = ', '.join(['%s'] * len(params))
             cur.execute(f"SELECT * FROM {nombre_funcion}({placeholders})", params)
@@ -328,5 +330,8 @@ class APIService:
             if isinstance(resultado, dict) and 'error' in resultado:
                 return (False, resultado['error'])
             return (True, resultado)
+        except UnicodeDecodeError as ex:
+            # Manejo específico para errores de codificación
+            return (False, f"Error de codificación en los datos de la BD: {str(ex)}")
         except Exception as ex:
             return (False, str(ex))
