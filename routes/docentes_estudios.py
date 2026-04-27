@@ -52,47 +52,90 @@ def listar():
 
 @docentes_estudios_bp.route('/docente/crear', methods=['POST'])
 def docente_crear():
+    cedula = request.form['cedula']
+
+    # 1. Crear el docente
     data = {
-        'cedula':                       request.form['cedula'],
-        'nombres':                      request.form['nombres'],
-        'apellidos':                    request.form['apellidos'],
-        'genero':                       request.form['genero'],
-        'cargo':                        request.form['cargo'],
-        'fecha_nacimiento':             request.form['fecha_nacimiento'],
-        'correo':                       request.form['correo'],
-        'telefono':                     request.form['telefono'],
-        'url_cvlac':                    request.form['url_cvlac'],
-        'fecha_actualizacion':          request.form['fecha_actualizacion'],
-        'escalafon':                    request.form['escalafon'],
-        'perfil':                       request.form['perfil'],
-        'cat_minciencia':               request.form.get('cat_minciencia', ''),
-        'conv_minciencia':              request.form['conv_minciencia'],
-        'nacionalidaad':                request.form['nacionalidaad'],
+        'cedula':                        cedula,
+        'nombres':                       request.form['nombres'],
+        'apellidos':                     request.form['apellidos'],
+        'genero':                        request.form['genero'],
+        'cargo':                         request.form['cargo'],
+        'fecha_nacimiento':              request.form['fecha_nacimiento'],
+        'correo':                        request.form['correo'],
+        'telefono':                      request.form['telefono'],
+        'url_cvlac':                     request.form['url_cvlac'],
+        'fecha_actualizacion':           request.form['fecha_actualizacion'],
+        'escalafon':                     request.form['escalafon'],
+        'perfil':                        request.form['perfil'],
+        'cat_minciencia':                request.form.get('cat_minciencia', ''),
+        'conv_minciencia':               request.form['conv_minciencia'],
+        'nacionalidaad':                 request.form['nacionalidaad'],
         'linea_investigacion_principal': request.form.get('linea_investigacion_principal', ''),
     }
     exito, resultado = api_service.create('docente', data)
-    flash('Docente creado correctamente.' if exito else f'Error: {resultado}',
-          'success' if exito else 'danger')
+    if not exito:
+        flash(f'Error al crear docente: {resultado}', 'danger')
+        return redirect(url_for('docentes_estudios.listar'))
+
+    flash('Docente creado correctamente.', 'success')
+
+    # 2. Crear nuevo estudio si se llenaron los campos (opcional)
+    estudio_id    = request.form.get('estudio_id', '').strip()
+    estudio_titulo = request.form.get('estudio_titulo', '').strip()
+    if estudio_id and estudio_titulo:
+        data_estudio = {
+            'id':              estudio_id,
+            'titulo':          estudio_titulo,
+            'universidad':     request.form.get('estudio_universidad', ''),
+            'fecha':           request.form.get('estudio_fecha', ''),
+            'tipo':            request.form.get('estudio_tipo', ''),
+            'ciudad':          request.form.get('estudio_ciudad', ''),
+            'docente':         cedula,
+            'ins_acreditada':  request.form.get('estudio_ins_acreditada', '0'),
+            'metodologia':     request.form.get('estudio_metodologia', 'Presencial'),
+            'perfil_egresado': request.form.get('estudio_perfil_egresado', ''),
+            'pais':            request.form.get('estudio_pais', ''),
+        }
+        exito_e, resultado_e = api_service.create('estudios_realizados', data_estudio)
+        if exito_e:
+            flash('Estudio creado y asignado correctamente.', 'success')
+            # Asignar el estudio recién creado al docente
+            api_service.llamar_sp('sp_crud_docentes_estudios', ['INSERT', int(cedula), int(estudio_id)])
+        else:
+            flash(f'Docente creado pero error al crear estudio: {resultado_e}', 'warning')
+
+    # 3. Asignar estudio existente si se seleccionó (opcional)
+    estudio_asignar = request.form.get('estudio_asignar', '').strip()
+    if estudio_asignar:
+        exito_a, resultado_a = api_service.llamar_sp(
+            'sp_crud_docentes_estudios', ['INSERT', int(cedula), int(estudio_asignar)]
+        )
+        if exito_a:
+            flash('Estudio existente asignado correctamente.', 'success')
+        else:
+            flash(f'Docente creado pero error al asignar estudio: {resultado_a}', 'warning')
+
     return redirect(url_for('docentes_estudios.listar'))
 
 
 @docentes_estudios_bp.route('/docente/editar/<int:cedula>', methods=['POST'])
 def docente_editar(cedula):
     data = {
-        'nombres':                      request.form['nombres'],
-        'apellidos':                    request.form['apellidos'],
-        'genero':                       request.form['genero'],
-        'cargo':                        request.form['cargo'],
-        'fecha_nacimiento':             request.form['fecha_nacimiento'],
-        'correo':                       request.form['correo'],
-        'telefono':                     request.form['telefono'],
-        'url_cvlac':                    request.form['url_cvlac'],
-        'fecha_actualizacion':          request.form['fecha_actualizacion'],
-        'escalafon':                    request.form['escalafon'],
-        'perfil':                       request.form['perfil'],
-        'cat_minciencia':               request.form.get('cat_minciencia', ''),
-        'conv_minciencia':              request.form['conv_minciencia'],
-        'nacionalidaad':                request.form['nacionalidaad'],
+        'nombres':                       request.form['nombres'],
+        'apellidos':                     request.form['apellidos'],
+        'genero':                        request.form['genero'],
+        'cargo':                         request.form['cargo'],
+        'fecha_nacimiento':              request.form['fecha_nacimiento'],
+        'correo':                        request.form['correo'],
+        'telefono':                      request.form['telefono'],
+        'url_cvlac':                     request.form['url_cvlac'],
+        'fecha_actualizacion':           request.form['fecha_actualizacion'],
+        'escalafon':                     request.form['escalafon'],
+        'perfil':                        request.form['perfil'],
+        'cat_minciencia':                request.form.get('cat_minciencia', ''),
+        'conv_minciencia':               request.form['conv_minciencia'],
+        'nacionalidaad':                 request.form['nacionalidaad'],
         'linea_investigacion_principal': request.form.get('linea_investigacion_principal', ''),
     }
     exito, resultado = api_service.update('docente', cedula, data)

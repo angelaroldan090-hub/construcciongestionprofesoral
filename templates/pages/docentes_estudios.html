@@ -81,7 +81,7 @@
                                     <a href="{{ url_for('docentes_estudios.desasignar', docente=docente.cedula, estudio=estudio.id) }}"
                                        class="btn btn-sm btn-secondary py-0 px-1"
                                        onclick="return confirm('¿Desasignar este estudio del docente?')"
-                                       title="Desasignar (quita la relación sin eliminar el estudio)">
+                                       title="Desasignar">
                                         <i class="fas fa-unlink"></i>
                                     </a>
                                 </td>
@@ -133,10 +133,8 @@
 
 
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- MODALES COMPARTIDOS                                                 -->
+    <!-- MODAL: CREAR DOCENTE (con secciones de estudio y asignar)           -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-
-    <!-- Modal: Crear Docente -->
     <div class="modal fade" id="modalCrearDocente" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -146,6 +144,11 @@
                 </div>
                 <form action="{{ url_for('docentes_estudios.docente_crear') }}" method="POST">
                     <div class="modal-body">
+
+                        <!-- SECCIÓN 1: DATOS DEL DOCENTE -->
+                        <h6 class="fw-bold text-primary border-bottom pb-1 mb-3">
+                            <i class="fas fa-user me-1"></i> Datos del Docente
+                        </h6>
                         <div class="row">
                             <div class="col-md-4 mb-2">
                                 <label class="form-label">Cédula *</label>
@@ -224,10 +227,92 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label class="form-label">Perfil *</label>
                             <textarea class="form-control" name="perfil" rows="3" required></textarea>
                         </div>
+
+                        <!-- SECCIÓN 2: NUEVO ESTUDIO (opcional) -->
+                        <h6 class="fw-bold text-success border-bottom pb-1 mb-3 mt-2">
+                            <i class="fas fa-graduation-cap me-1"></i> Nuevo Estudio <span class="fw-normal text-muted">(opcional)</span>
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">ID Estudio</label>
+                                <input type="number" class="form-control" name="estudio_id">
+                            </div>
+                            <div class="col-md-8 mb-2">
+                                <label class="form-label">Título</label>
+                                <input type="text" class="form-control" name="estudio_titulo">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Universidad</label>
+                                <input type="text" class="form-control" name="estudio_universidad">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha</label>
+                                <input type="date" class="form-control" name="estudio_fecha">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="estudio_tipo">
+                                    <option value="">Seleccione</option>
+                                    <option value="Pregrado">Pregrado</option>
+                                    <option value="Especialización">Especialización</option>
+                                    <option value="Maestría">Maestría</option>
+                                    <option value="Doctorado">Doctorado</option>
+                                    <option value="Postdoctorado">Postdoctorado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Ciudad</label>
+                                <input type="text" class="form-control" name="estudio_ciudad">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">País</label>
+                                <input type="text" class="form-control" name="estudio_pais">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Inst. Acreditada</label>
+                                <select class="form-select" name="estudio_ins_acreditada">
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Metodología</label>
+                                <select class="form-select" name="estudio_metodologia">
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                    <option value="Mixta">Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Perfil del Egresado</label>
+                            <textarea class="form-control" name="estudio_perfil_egresado" rows="2"></textarea>
+                        </div>
+
+                        <!-- SECCIÓN 3: ASIGNAR ESTUDIO EXISTENTE (opcional) -->
+                        <h6 class="fw-bold text-info border-bottom pb-1 mb-3 mt-2">
+                            <i class="fas fa-link me-1"></i> Asignar Estudio Existente <span class="fw-normal text-muted">(opcional)</span>
+                        </h6>
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Estudio</label>
+                            <select class="form-select" name="estudio_asignar">
+                                <option value="">-- Ninguno --</option>
+                                {% for estudio in todos_estudios %}
+                                <option value="{{ estudio.id }}">
+                                    [{{ estudio.id }}] {{ estudio.titulo }} – {{ estudio.universidad }} ({{ estudio.tipo }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -513,7 +598,6 @@
 </div><!-- /container-fluid -->
 
 <script>
-// ── Mapas de datos ────────────────────────────────────────────────────────────
 const _docentesMap  = {};
 const _estudiosMap  = {};
 {{ docentes|tojson }}.forEach(d => { _docentesMap[String(d.cedula)] = d; });
@@ -521,63 +605,58 @@ const _estudiosMap  = {};
 
 function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
 
-// ── Docente: Editar ───────────────────────────────────────────────────────────
 function editarDocente(cedula) {
     const d = _docentesMap[String(cedula)];
     if (!d) { alert('No se encontraron datos del docente.'); return; }
-    document.getElementById('formEditarDocente').action = `/docentes_estudios/docente/editar/${cedula}`;
-    document.getElementById('ed_cedula').value            = d.cedula;
-    document.getElementById('ed_nombres').value           = d.nombres;
-    document.getElementById('ed_apellidos').value         = d.apellidos;
-    document.getElementById('ed_genero').value            = d.genero;
-    document.getElementById('ed_cargo').value             = d.cargo;
-    document.getElementById('ed_fecha_nacimiento').value  = _fecha(d.fecha_nacimiento);
-    document.getElementById('ed_correo').value            = d.correo;
-    document.getElementById('ed_telefono').value          = d.telefono;
-    document.getElementById('ed_url_cvlac').value         = d.url_cvlac;
-    document.getElementById('ed_fecha_actualizacion').value = _fecha(d.fecha_actualizacion);
-    document.getElementById('ed_escalafon').value         = d.escalafon;
-    document.getElementById('ed_cat_minciencia').value    = d.cat_minciencia || '';
-    document.getElementById('ed_conv_minciencia').value   = d.conv_minciencia;
-    document.getElementById('ed_nacionalidaad').value     = d.nacionalidaad;
-    document.getElementById('ed_linea').value             = d.linea_investigacion_principal || '';
-    document.getElementById('ed_perfil').value            = d.perfil;
+    document.getElementById('formEditarDocente').action      = `/docentes_estudios/docente/editar/${cedula}`;
+    document.getElementById('ed_cedula').value               = d.cedula;
+    document.getElementById('ed_nombres').value              = d.nombres;
+    document.getElementById('ed_apellidos').value            = d.apellidos;
+    document.getElementById('ed_genero').value               = d.genero;
+    document.getElementById('ed_cargo').value                = d.cargo;
+    document.getElementById('ed_fecha_nacimiento').value     = _fecha(d.fecha_nacimiento);
+    document.getElementById('ed_correo').value               = d.correo;
+    document.getElementById('ed_telefono').value             = d.telefono;
+    document.getElementById('ed_url_cvlac').value            = d.url_cvlac;
+    document.getElementById('ed_fecha_actualizacion').value  = _fecha(d.fecha_actualizacion);
+    document.getElementById('ed_escalafon').value            = d.escalafon;
+    document.getElementById('ed_cat_minciencia').value       = d.cat_minciencia || '';
+    document.getElementById('ed_conv_minciencia').value      = d.conv_minciencia;
+    document.getElementById('ed_nacionalidaad').value        = d.nacionalidaad;
+    document.getElementById('ed_linea').value                = d.linea_investigacion_principal || '';
+    document.getElementById('ed_perfil').value               = d.perfil;
     new bootstrap.Modal(document.getElementById('modalEditarDocente')).show();
 }
 
-// ── Docente: Eliminar ─────────────────────────────────────────────────────────
 function eliminarDocente(cedula) {
     if (confirm('¿Eliminar este docente?\nEsto también eliminará sus estudios y relaciones asociadas.')) {
         window.location.href = `/docentes_estudios/docente/eliminar/${cedula}`;
     }
 }
 
-// ── Estudio: Abrir modal Crear con docente pre-seleccionado ───────────────────
 function abrirCrearEstudio(cedula) {
     document.getElementById('ce_docente').value = cedula;
     new bootstrap.Modal(document.getElementById('modalCrearEstudio')).show();
 }
 
-// ── Estudio: Editar ───────────────────────────────────────────────────────────
 function abrirEditarEstudio(id) {
     const e = _estudiosMap[String(id)];
     if (!e) { alert('No se encontraron datos del estudio.'); return; }
-    document.getElementById('formEditarEstudio').action = `/docentes_estudios/estudio/editar/${id}`;
-    document.getElementById('ee_id').value              = e.id;
-    document.getElementById('ee_titulo').value          = e.titulo;
-    document.getElementById('ee_universidad').value     = e.universidad;
-    document.getElementById('ee_fecha').value           = _fecha(e.fecha);
-    document.getElementById('ee_tipo').value            = e.tipo;
-    document.getElementById('ee_ciudad').value          = e.ciudad || '';
-    document.getElementById('ee_pais').value            = e.pais || '';
-    document.getElementById('ee_ins_acreditada').value  = e.ins_acreditada != null ? String(e.ins_acreditada) : '1';
-    document.getElementById('ee_metodologia').value     = e.metodologia || 'Presencial';
-    document.getElementById('ee_docente').value         = e.docente || '';
-    document.getElementById('ee_perfil_egresado').value = e.perfil_egresado || '';
+    document.getElementById('formEditarEstudio').action     = `/docentes_estudios/estudio/editar/${id}`;
+    document.getElementById('ee_id').value                  = e.id;
+    document.getElementById('ee_titulo').value              = e.titulo;
+    document.getElementById('ee_universidad').value         = e.universidad;
+    document.getElementById('ee_fecha').value               = _fecha(e.fecha);
+    document.getElementById('ee_tipo').value                = e.tipo;
+    document.getElementById('ee_ciudad').value              = e.ciudad || '';
+    document.getElementById('ee_pais').value                = e.pais || '';
+    document.getElementById('ee_ins_acreditada').value      = e.ins_acreditada != null ? String(e.ins_acreditada) : '1';
+    document.getElementById('ee_metodologia').value         = e.metodologia || 'Presencial';
+    document.getElementById('ee_docente').value             = e.docente || '';
+    document.getElementById('ee_perfil_egresado').value     = e.perfil_egresado || '';
     new bootstrap.Modal(document.getElementById('modalEditarEstudio')).show();
 }
 
-// ── Estudio: Eliminar ─────────────────────────────────────────────────────────
 function eliminarEstudio(id) {
     if (confirm('¿Eliminar este estudio permanentemente?\nSe eliminará de todos los docentes a los que esté asignado.')) {
         window.location.href = `/docentes_estudios/estudio/eliminar/${id}`;
