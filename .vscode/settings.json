@@ -1,0 +1,18 @@
+{
+    "html.validate.styles": false,
+    "html.validate.scripts": false,
+    "html.hint.incompatibleMediaType": false,
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": false
+    },
+    "files.associations": {
+        "*.html": "html"
+    },
+    "pylint.args": [
+        "--disable=C0111"
+    ],
+    "html.validate.content": false,
+    "html.format.enable": false,
+    "html.lint.matchingTagNameCase": false
+}

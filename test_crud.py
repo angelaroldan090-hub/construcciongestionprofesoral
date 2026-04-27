@@ -17,7 +17,8 @@ DB_CONFIG = {
     'database': 'postgres',  # Tu base de datos
     'user': 'postgres',       # Tu usuario
     'password': 'admin',      # Tu contraseña
-    'port': 5432
+    'port': 5432,
+    'client_encoding': 'UTF8'  # Asegurar UTF-8
 }
 
 # ============================================

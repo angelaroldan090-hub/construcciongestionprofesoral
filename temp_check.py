@@ -1,6 +1,6 @@
 import psycopg2, json
 
-conn = psycopg2.connect(host='localhost', port=5432, dbname='mapaConocimiento', user='postgres', password='adminsanny')
+conn = psycopg2.connect(host='localhost', port=5432, dbname='mapaConocimiento', user='postgres', password='adminsanny', client_encoding='UTF8')
 cur = conn.cursor()
 
 # Crear tabla docentes_estudios si no existe y migrar datos
