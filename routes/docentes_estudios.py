@@ -13,10 +13,12 @@ def listar():
     todos_estudios = api_service.get_all('estudios_realizados')
     estudio_by_id  = {str(e['id']): e for e in todos_estudios}
 
-    exito, relaciones_sp = api_service.llamar_sp('sp_crud_docentes_estudios', ['LISTAR'])
-    relaciones_sp = relaciones_sp if exito and isinstance(relaciones_sp, list) else []
+    exito, resultado_sp = api_service.llamar_sp('sp_crud_docentes_estudios', ['LISTAR'])
     if not exito:
-        flash(f'Error al cargar relaciones: {relaciones_sp}', 'danger')
+        flash(f'Error al cargar relaciones: {resultado_sp}', 'danger')
+        relaciones_sp = []
+    else:
+        relaciones_sp = resultado_sp if isinstance(resultado_sp, list) else []
 
     asignados_ids = {int(r['estudio']) for r in relaciones_sp}
 
