@@ -56,7 +56,6 @@ def listar():
 def docente_crear():
     cedula = request.form['cedula']
 
-    # 1. Crear el docente
     data = {
         'cedula':                        cedula,
         'nombres':                       request.form['nombres'],
@@ -82,8 +81,8 @@ def docente_crear():
 
     flash('Docente creado correctamente.', 'success')
 
-    # 2. Crear nuevo estudio si se llenaron los campos (opcional)
-    estudio_id    = request.form.get('estudio_id', '').strip()
+    # Crear nuevo estudio si se llenaron los campos (opcional)
+    estudio_id     = request.form.get('estudio_id', '').strip()
     estudio_titulo = request.form.get('estudio_titulo', '').strip()
     if estudio_id and estudio_titulo:
         data_estudio = {
@@ -102,12 +101,11 @@ def docente_crear():
         exito_e, resultado_e = api_service.create('estudios_realizados', data_estudio)
         if exito_e:
             flash('Estudio creado y asignado correctamente.', 'success')
-            # Asignar el estudio recién creado al docente
             api_service.llamar_sp('sp_crud_docentes_estudios', ['INSERT', int(cedula), int(estudio_id)])
         else:
             flash(f'Docente creado pero error al crear estudio: {resultado_e}', 'warning')
 
-    # 3. Asignar estudio existente si se seleccionó (opcional)
+    # Asignar estudio existente si se seleccionó (opcional)
     estudio_asignar = request.form.get('estudio_asignar', '').strip()
     if estudio_asignar:
         exito_a, resultado_a = api_service.llamar_sp(
@@ -199,9 +197,24 @@ def estudio_editar(id):
 
 @docentes_estudios_bp.route('/estudio/eliminar/<int:id>')
 def estudio_eliminar(id):
+    # Eliminar relaciones en todas las tablas que referencian estudios_realizados
+    api_service.eliminar('apoyo_profesoral', 'estudios', id)
+    api_service.eliminar('beca', 'estudios', id)
+    api_service.eliminar('estudio_ac', 'estudio', id)
+
+    # Eliminar relaciones en docentes_estudios via SP
+    docentes = api_service.get_all('docente')
+    for docente in docentes:
+        api_service.llamar_sp('sp_crud_docentes_estudios', ['DELETE', docente['cedula'], id])
+
+    # Finalmente eliminar el estudio
     exito, resultado = api_service.delete('estudios_realizados', id)
-    flash('Estudio eliminado correctamente.' if exito else f'Error: {resultado}',
-          'success' if exito else 'danger')
+
+    if exito:
+        flash('Estudio eliminado correctamente.', 'success')
+    else:
+        flash(f'Error: {resultado}', 'danger')
+
     return redirect(url_for('docentes_estudios.listar'))
 
 
