@@ -1,0 +1,14 @@
+{% extends 'layout/base.html' %}
+{% block title %}Acceso Denegado{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <i class="fas fa-ban fa-4x text-danger mb-3"></i>
+    <h2 class="text-danger">Acceso Denegado</h2>
+    <p class="text-muted lead">No tienes permisos para acceder a esta página.</p>
+    <p class="text-muted">Si crees que esto es un error, contacta al administrador.</p>
+    <a href="{{ url_for('home.index') }}" class="btn btn-dark mt-2">
+        <i class="fas fa-home me-1"></i> Volver al inicio
+    </a>
+</div>
+{% endblock %}

@@ -35,5 +35,15 @@ DB_CONFIG = {
     'port': int(os.getenv('DB_PORT', '5432')),
     'database': os.getenv('DB_NAME', 'mapaConocimiento'),
     'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', 'Lululover1234')
+    'password': os.getenv('DB_PASSWORD', 'adminsanny')
 }
+
+# ──────────────────────────────────────────────
+# Configuración SMTP para recuperación de contraseña.
+# Completar con los datos de Gmail (App Password).
+# ──────────────────────────────────────────────
+SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+SMTP_USER = os.getenv('SMTP_USER', '')
+SMTP_PASS = os.getenv('SMTP_PASS', '')
+SMTP_FROM = os.getenv('SMTP_FROM', '')
