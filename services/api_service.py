@@ -11,6 +11,16 @@ from config import API_BASE_URL
 
 
 class APIService:
+
+    def _headers(self):
+        """Construye los headers HTTP. Agrega JWT si hay sesión activa."""
+        from flask import session as flask_session
+        h = {"Content-Type": "application/json"}
+        token = flask_session.get("token") if flask_session else None
+        if token:
+            h["Authorization"] = f"Bearer {token}"
+        return h
+
     # Mapa de tabla → nombre del campo clave primaria
     # Necesario porque la API genérica usa: PUT /api/{tabla}/{campo}/{valor}
     _PK_MAP = {
@@ -47,7 +57,7 @@ class APIService:
             if limite:
                 params['limite'] = limite
 
-            respuesta = requests.get(url, params=params)
+            respuesta = requests.get(url, params=params, headers=self._headers())
 
             # Si la respuesta es 204 (No Content) -> tabla vacía
             if respuesta.status_code == 204:
@@ -85,7 +95,7 @@ class APIService:
             if campos_encriptar:
                 params['camposEncriptar'] = campos_encriptar
 
-            respuesta = requests.post(url, json=datos, params=params)
+            respuesta = requests.post(url, json=datos, params=params, headers=self._headers())
 
             # Intentar decodificar JSON
             try:
@@ -114,7 +124,7 @@ class APIService:
             if campos_encriptar:
                 params['camposEncriptar'] = campos_encriptar
 
-            respuesta = requests.put(url, json=datos, params=params)
+            respuesta = requests.put(url, json=datos, params=params, headers=self._headers())
 
             try:
                 contenido = respuesta.json()
@@ -180,7 +190,7 @@ class APIService:
         """
         try:
             url = f"{self.base_url}/api/{tabla}/{nombre_clave}/{valor_clave}"
-            respuesta = requests.delete(url)
+            respuesta = requests.delete(url, headers=self._headers())
 
             try:
                 contenido = respuesta.json()
@@ -316,7 +326,6 @@ class APIService:
         import psycopg2
         from config import DB_CONFIG
         try:
-            # Agregar client_encoding para asegurar UTF-8
             db_config = {**DB_CONFIG, 'client_encoding': 'UTF8'}
             conn = psycopg2.connect(**db_config)
             cur = conn.cursor()
