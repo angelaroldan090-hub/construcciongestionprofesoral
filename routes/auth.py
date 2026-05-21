@@ -40,6 +40,7 @@ def login_post():
     session['roles'] = datos.get('roles', [])
     session['rutas_permitidas'] = datos.get('rutas_permitidas', [])
     session['rutas_crud'] = datos.get('rutas_crud', [])
+    session['rutas_editar'] = datos.get('rutas_editar', [])
     session['debe_cambiar_contrasena'] = datos.get('debe_cambiar_contrasena', False)
 
     if session['debe_cambiar_contrasena']:

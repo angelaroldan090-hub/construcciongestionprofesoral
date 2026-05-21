@@ -36,14 +36,16 @@
                 <small class="ms-2 fw-normal">Cédula: {{ docente.cedula }}</small>
                 {% endif %}
             </h5>
-            {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud %}
+            {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud or "/docentes_estudios" in rutas_editar %}
             <div class="d-flex gap-1 flex-wrap">
                 <button class="btn btn-sm btn-warning" onclick="editarDocente({{ docente.cedula }})" title="Editar docente">
                     <i class="fas fa-edit"></i> Editar
                 </button>
+                {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud %}
                 <button class="btn btn-sm btn-danger" onclick="eliminarDocente({{ docente.cedula }})" title="Eliminar docente">
                     <i class="fas fa-trash"></i> Eliminar
                 </button>
+                {% endif %}
             </div>
             {% endif %}
         </div>
