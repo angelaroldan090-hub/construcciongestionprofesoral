@@ -28,7 +28,12 @@ def crear_middleware(app):
         if not rutas_permitidas:
             return
 
-        # 6. Verificar ruta exacta o sub-ruta
+        # 6. Rol DECANO → solo lectura, no puede crear/editar/eliminar
+        if 'DECANO' in session.get('roles', []):
+            if request.method in ['POST', 'PUT', 'DELETE']:
+                return render_template('pages/sin_acceso.html'), 403
+
+        # 7. Verificar ruta exacta o sub-ruta
         ruta_actual = request.path
         rutas_crud = set(session.get('rutas_crud', []))
         rutas_editar = set(session.get('rutas_editar', []))
@@ -41,7 +46,7 @@ def crear_middleware(app):
                 if ruta in rutas_editar and '/editar/' in ruta_actual:
                     return  # Solo sub-rutas de editar
 
-        # 7. No permitida → 403
+        # 8. No permitida → 403
         return render_template('pages/sin_acceso.html'), 403
 
     @app.context_processor
