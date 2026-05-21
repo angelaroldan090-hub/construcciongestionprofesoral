@@ -94,13 +94,14 @@ class AuthService:
                   or email)
         debe_cambiar = datos_auth.get("debe_cambiar_contrasena", False)
 
-        roles, rutas = self._obtener_roles_y_rutas(email, token)
+        roles, rutas, rutas_crud = self._obtener_roles_y_rutas(email, token)
 
         return (True, {
             "token": token,
             "nombre": nombre,
             "roles": roles,
             "rutas_permitidas": rutas,
+            "rutas_crud": rutas_crud,
             "debe_cambiar_contrasena": debe_cambiar,
         })
 
@@ -117,7 +118,7 @@ class AuthService:
         if all([fk_ru_usuario, fk_ru_rol, fk_rr_rol, fk_rr_ruta]):
             # JOIN por email del usuario (campo único, no la PK entera)
             sql = (
-                f"SELECT r.nombre AS nombre_rol, ruta_t.ruta "
+                f"SELECT r.nombre AS nombre_rol, ruta_t.ruta, rr.tipo AS tipo "
                 f"FROM usuario u "
                 f"JOIN rol_usuario rolu ON u.id = rolu.{fk_ru_usuario} "
                 f"JOIN rol r ON rolu.{fk_ru_rol} = r.{pk_rol} "
@@ -139,7 +140,8 @@ class AuthService:
                     resultados = r.json().get("resultados", [])
                     roles = list({row["nombre_rol"] for row in resultados})
                     rutas = list({row["ruta"] for row in resultados})
-                    return (roles, rutas)
+                    rutas_crud = list({row["ruta"] for row in resultados if row.get("tipo", "crud") == "crud"})
+                    return (roles, rutas, rutas_crud)
             except Exception:
                 pass
 
@@ -190,7 +192,15 @@ class AuthService:
         ruta_by_id = {str(rt[pk_ruta]): rt["ruta"] for rt in todos_rutas}
         rutas = [ruta_by_id[rid] for rid in id_rutas if rid in ruta_by_id]
 
-        return (roles, rutas)
+        id_rutas_crud = {
+            str(rr[fk_rr_ruta])
+            for rr in todos_rr
+            if str(rr.get(fk_rr_rol, "")) in id_roles_usuario
+            and rr.get("tipo", "crud") == "crud"
+        }
+        rutas_crud = [ruta_by_id[rid] for rid in id_rutas_crud if rid in ruta_by_id]
+
+        return (roles, rutas, rutas_crud)
 
     # ── Cambiar contraseña ─────────────────────────────────────────────────────
 
