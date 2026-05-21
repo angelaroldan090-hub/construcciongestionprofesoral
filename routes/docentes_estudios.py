@@ -1,5 +1,5 @@
 from collections import defaultdict
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from services.api_service import APIService
 
 docentes_estudios_bp = Blueprint('docentes_estudios', __name__)
@@ -121,6 +121,14 @@ def docente_crear():
 
 @docentes_estudios_bp.route('/docente/editar/<int:cedula>', methods=['POST'])
 def docente_editar(cedula):
+    # Protección de fila: DOCENTE solo puede modificar su propia ficha
+    rutas_editar = set(session.get('rutas_editar', []))
+    rutas_crud   = set(session.get('rutas_crud', []))
+    if '/docentes_estudios' in rutas_editar and '/docentes_estudios' not in rutas_crud:
+        cedula_propia = session.get('cedula_docente')
+        if not cedula_propia or int(cedula_propia) != cedula:
+            flash('Solo puedes modificar tu propia información.', 'warning')
+            return redirect(url_for('docentes_estudios.listar'))
     data = {
         'nombres':                       request.form['nombres'],
         'apellidos':                     request.form['apellidos'],
@@ -177,6 +185,15 @@ def estudio_crear():
 
 @docentes_estudios_bp.route('/estudio/editar/<int:id>', methods=['POST'])
 def estudio_editar(id):
+    # Protección de fila: DOCENTE solo puede modificar estudios propios
+    rutas_editar = set(session.get('rutas_editar', []))
+    rutas_crud   = set(session.get('rutas_crud', []))
+    if '/docentes_estudios' in rutas_editar and '/docentes_estudios' not in rutas_crud:
+        cedula_propia = session.get('cedula_docente')
+        estudio = api_service.get_one('estudios_realizados', id)
+        if not cedula_propia or not estudio or str(estudio.get('docente', '')) != str(cedula_propia):
+            flash('Solo puedes modificar estudios propios.', 'warning')
+            return redirect(url_for('docentes_estudios.listar'))
     data = {
         'titulo':          request.form['titulo'],
         'universidad':     request.form['universidad'],

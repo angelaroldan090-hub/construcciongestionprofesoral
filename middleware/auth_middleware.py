@@ -53,4 +53,5 @@ def crear_middleware(app):
             'rutas_permitidas': set(session.get('rutas_permitidas', [])),
             'rutas_crud': set(session.get('rutas_crud', [])),
             'rutas_editar': set(session.get('rutas_editar', [])),
+            'cedula_docente': session.get('cedula_docente'),
         }
