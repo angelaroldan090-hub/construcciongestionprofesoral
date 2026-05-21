@@ -95,6 +95,7 @@ class AuthService:
         debe_cambiar = datos_auth.get("debe_cambiar_contrasena", False)
 
         roles, rutas, rutas_crud, rutas_editar = self._obtener_roles_y_rutas(email, token)
+        cedula_docente = self._obtener_cedula_docente(email, token)
 
         return (True, {
             "token": token,
@@ -103,6 +104,7 @@ class AuthService:
             "rutas_permitidas": rutas,
             "rutas_crud": rutas_crud,
             "rutas_editar": rutas_editar,
+            "cedula_docente": cedula_docente,
             "debe_cambiar_contrasena": debe_cambiar,
         })
 
@@ -211,6 +213,31 @@ class AuthService:
         rutas_editar = [ruta_by_id[rid] for rid in id_rutas_editar if rid in ruta_by_id]
 
         return (roles, rutas, rutas_crud, rutas_editar)
+
+    # ── Cédula del docente vinculado al usuario ───────────────────────────────
+
+    def _obtener_cedula_docente(self, email: str, token: str):
+        """Busca la cédula del docente cuyo correo coincide con el email del usuario."""
+        try:
+            headers = {"Content-Type": "application/json"}
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            r = requests.post(
+                f"{self.base_url}/api/consultas/ejecutarconsultaparametrizada",
+                json={
+                    "consulta": "SELECT cedula FROM docente WHERE correo = @email",
+                    "parametros": {"email": email}
+                },
+                headers=headers,
+                timeout=10
+            )
+            if r.ok:
+                rows = r.json().get("resultados", [])
+                if rows:
+                    return str(rows[0].get("cedula", ""))
+        except Exception:
+            pass
+        return None
 
     # ── Cambiar contraseña ─────────────────────────────────────────────────────
 

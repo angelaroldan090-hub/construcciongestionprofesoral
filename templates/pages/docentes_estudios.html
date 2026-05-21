@@ -36,7 +36,7 @@
                 <small class="ms-2 fw-normal">Cédula: {{ docente.cedula }}</small>
                 {% endif %}
             </h5>
-            {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud or "/docentes_estudios" in rutas_editar %}
+            {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud or ("/docentes_estudios" in rutas_editar and cedula_docente and docente.cedula|string == cedula_docente|string) %}
             <div class="d-flex gap-1 flex-wrap">
                 <button class="btn btn-sm btn-warning" onclick="editarDocente({{ docente.cedula }})" title="Editar docente">
                     <i class="fas fa-edit"></i> Editar
