@@ -30,9 +30,12 @@ def crear_middleware(app):
 
         # 6. Verificar ruta exacta o sub-ruta
         ruta_actual = request.path
+        rutas_crud = set(session.get('rutas_crud', []))
         for ruta in rutas_permitidas:
-            if ruta_actual == ruta or ruta_actual.startswith(ruta + '/'):
-                return
+            if ruta_actual == ruta or ruta_actual == ruta + '/':
+                return  # Exacta con o sin trailing slash
+            if ruta_actual.startswith(ruta + '/') and ruta in rutas_crud:
+                return  # Sub-ruta de acción solo con permiso crud
 
         # 7. No permitida → 403
         return render_template('pages/sin_acceso.html'), 403
@@ -44,4 +47,5 @@ def crear_middleware(app):
             'nombre_usuario': session.get('nombre_usuario', ''),
             'roles': session.get('roles', []),
             'rutas_permitidas': set(session.get('rutas_permitidas', [])),
+            'rutas_crud': set(session.get('rutas_crud', [])),
         }
