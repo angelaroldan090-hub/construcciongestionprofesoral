@@ -94,7 +94,7 @@ class AuthService:
                   or email)
         debe_cambiar = datos_auth.get("debe_cambiar_contrasena", False)
 
-        roles, rutas, rutas_crud = self._obtener_roles_y_rutas(email, token)
+        roles, rutas, rutas_crud, rutas_editar = self._obtener_roles_y_rutas(email, token)
 
         return (True, {
             "token": token,
@@ -102,6 +102,7 @@ class AuthService:
             "roles": roles,
             "rutas_permitidas": rutas,
             "rutas_crud": rutas_crud,
+            "rutas_editar": rutas_editar,
             "debe_cambiar_contrasena": debe_cambiar,
         })
 
@@ -141,7 +142,8 @@ class AuthService:
                     roles = list({row["nombre_rol"] for row in resultados})
                     rutas = list({row["ruta"] for row in resultados})
                     rutas_crud = list({row["ruta"] for row in resultados if row.get("tipo", "crud") == "crud"})
-                    return (roles, rutas, rutas_crud)
+                    rutas_editar = list({row["ruta"] for row in resultados if row.get("tipo") == "editar"})
+                    return (roles, rutas, rutas_crud, rutas_editar)
             except Exception:
                 pass
 
@@ -200,7 +202,15 @@ class AuthService:
         }
         rutas_crud = [ruta_by_id[rid] for rid in id_rutas_crud if rid in ruta_by_id]
 
-        return (roles, rutas, rutas_crud)
+        id_rutas_editar = {
+            str(rr[fk_rr_ruta])
+            for rr in todos_rr
+            if str(rr.get(fk_rr_rol, "")) in id_roles_usuario
+            and rr.get("tipo") == "editar"
+        }
+        rutas_editar = [ruta_by_id[rid] for rid in id_rutas_editar if rid in ruta_by_id]
+
+        return (roles, rutas, rutas_crud, rutas_editar)
 
     # ── Cambiar contraseña ─────────────────────────────────────────────────────
 
