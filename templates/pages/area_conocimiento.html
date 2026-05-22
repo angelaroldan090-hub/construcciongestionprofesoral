@@ -1,0 +1,108 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Áreas de Conocimiento{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-tags"></i> Áreas de Conocimiento</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nueva Área
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioArea" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nueva Área de Conocimiento</h4>
+            <form method="POST" id="areaForm">
+                <input type="hidden" id="editId" name="editId">
+                <div class="mb-2">
+                    <label>ID *</label>
+                    <input type="number" class="form-control" id="id" name="id" required>
+                </div>
+                <div class="mb-2">
+                    <label>Gran Área *</label>
+                    <input type="text" class="form-control" id="gran_area" name="gran_area" required>
+                </div>
+                <div class="mb-2">
+                    <label>Área *</label>
+                    <input type="text" class="form-control" id="area" name="area" required>
+                </div>
+                <div class="mb-2">
+                    <label>Disciplina *</label>
+                    <input type="text" class="form-control" id="disciplina" name="disciplina" required>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr><th>ID</th><th>Gran Área</th><th>Área</th><th>Disciplina</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for area in areas %}
+                    <tr>
+                        <td>{{ area.id }}</td>
+                        <td>{{ area.gran_area }}</td>
+                        <td>{{ area.area }}</td>
+                        <td>{{ area.disciplina }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarArea({{ area.id }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarArea({{ area.id }})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const _areasMap = {};
+{{ areas|tojson }}.forEach(a => { _areasMap[String(a.id)] = a; });
+
+function mostrarFormulario() {
+    document.getElementById('formularioArea').style.display = 'block';
+    document.getElementById('formTitulo').innerText = 'Nueva Área de Conocimiento';
+    document.getElementById('areaForm').reset();
+    document.getElementById('editId').value = '';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioArea').style.display = 'none';
+}
+
+function editarArea(id) {
+    const data = _areasMap[String(id)];
+    if (!data) { alert('No se encontró el área.'); return; }
+    document.getElementById('editId').value = data.id;
+    document.getElementById('id').value = data.id;
+    document.getElementById('gran_area').value = data.gran_area;
+    document.getElementById('area').value = data.area;
+    document.getElementById('disciplina').value = data.disciplina;
+    document.getElementById('formTitulo').innerText = 'Editar Área de Conocimiento';
+    document.getElementById('formularioArea').style.display = 'block';
+}
+
+function eliminarArea(id) {
+    if(confirm('¿Está seguro?')) {
+        window.location.href = `/area/eliminar/${id}`;
+    }
+}
+
+document.getElementById('areaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    const url = editId ? `/area/editar/${editId}` : '/area/crear';
+    const formData = new FormData(this);
+    fetch(url, { method: 'POST', body: formData }).then(() => { window.location.reload(); });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('home.index') }}">
+            <i class="fas fa-chalkboard-user"></i> Gestión Profesoral
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-tie"></i> Docentes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('docentes_estudios.listar') }}">Docentes y Estudios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('evaluacion.listar') }}">Evaluaciones</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('reconocimiento.listar') }}">Reconocimientos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('experiencia.listar') }}">Experiencias</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-graduation-cap"></i> Estudios
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('area.listar') }}">Áreas de Conocimiento</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('apoyo.listar') }}">Apoyos Profesorales</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('beca.listar') }}">Becas</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-network-wired"></i> Redes
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('red.listar') }}">Redes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('red_docente.listar') }}">Redes - Docentes</a></li>
+                    </ul>
+                </li>
+                
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-flask"></i> Investigación
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('linea.listar') }}">Líneas de Investigación</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('termino.listar') }}">Términos Clave</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('programa.listar') }}">Programas</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            {% if usuario %}
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-white-50 small">
+                    <i class="fas fa-user-circle me-1"></i>{{ nombre_usuario or usuario }}
+                </span>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Salir
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,114 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Reconocimientos{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-trophy"></i> Reconocimientos</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nuevo Reconocimiento
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioReconocimiento" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Reconocimiento</h4>
+            <form method="POST" id="reconocimientoForm">
+                <input type="hidden" id="editId" name="editId">
+                <div class="mb-2">
+                    <label>Docente *</label>
+                    <select class="form-control" id="docente" name="docente" required>
+                        <option value="">Seleccione un docente</option>
+                        {% for docente in docentes %}
+                        <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2"><label>Nombre *</label><input type="text" class="form-control" id="nombre" name="nombre" required></div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Tipo *</label><input type="text" class="form-control" id="tipo" name="tipo" required></div>
+                    <div class="col-md-6 mb-2"><label>Ámbito *</label>
+                        <select class="form-control" id="ambito" name="ambito" required>
+                            <option value="Local">Local</option><option value="Nacional">Nacional</option><option value="Internacional">Internacional</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Institución *</label><input type="text" class="form-control" id="institucion" name="institucion" required></div>
+                    <div class="col-md-6 mb-2"><label>Fecha *</label><input type="date" class="form-control" id="fecha" name="fecha" required></div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>ID</th><th>Docente</th><th>Nombre</th><th>Tipo</th><th>Fecha</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for reconocimiento in reconocimientos %}
+                    <tr>
+                        <td>{{ reconocimiento.id }}</td>
+                        <td>{{ reconocimiento.docente_nombre if reconocimiento.docente_nombre else reconocimiento.docente }}</td>
+                        <td>{{ reconocimiento.nombre }}</td>
+                        <td>{{ reconocimiento.tipo }}</td>
+                        <td>{{ reconocimiento.fecha.split('T')[0] if reconocimiento.fecha else '' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarReconocimiento({{ reconocimiento.id }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarReconocimiento({{ reconocimiento.id }})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const _reconocimientosMap = {};
+{{ reconocimientos|tojson }}.forEach(r => { _reconocimientosMap[String(r.id)] = r; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
+function mostrarFormulario() {
+    document.getElementById('formularioReconocimiento').style.display='block';
+    document.getElementById('formTitulo').innerText='Nuevo Reconocimiento';
+    document.getElementById('reconocimientoForm').reset();
+    document.getElementById('editId').value='';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioReconocimiento').style.display='none';
+}
+
+function editarReconocimiento(id) {
+    const data = _reconocimientosMap[String(id)];
+    if (!data) { alert('No se encontró el reconocimiento.'); return; }
+    document.getElementById('editId').value=data.id;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('nombre').value=data.nombre;
+    document.getElementById('tipo').value=data.tipo;
+    document.getElementById('ambito').value=data.ambito;
+    document.getElementById('institucion').value=data.institucion;
+    document.getElementById('fecha').value=_fecha(data.fecha);
+    document.getElementById('formTitulo').innerText='Editar Reconocimiento';
+    document.getElementById('formularioReconocimiento').style.display='block';
+}
+
+function eliminarReconocimiento(id) {
+    if(confirm('¿Está seguro?')) window.location.href=`/reconocimiento/eliminar/${id}`;
+}
+
+document.getElementById('reconocimientoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId=document.getElementById('editId').value;
+    const url=editId?`/reconocimiento/editar/${editId}`:'/reconocimiento/crear';
+    fetch(url,{method:'POST',body:new FormData(this)}).then(()=>{window.location.reload();});
+});
+</script>
+{% endblock %}

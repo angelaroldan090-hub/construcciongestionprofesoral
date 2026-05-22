@@ -1,0 +1,120 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Redes de Docentes{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-users"></i> Redes de Docentes</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nueva Asignación
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioRedDocente" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nueva Asignación</h4>
+            <form method="POST" id="redDocenteForm">
+                <input type="hidden" id="editRed" name="editRed"><input type="hidden" id="editDocente" name="editDocente">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label>Red *</label>
+                        <select class="form-control" id="red" name="red" required>
+                            <option value="">Seleccione una red</option>
+                            {% for red in redes %}
+                            <option value="{{ red.idr }}">{{ red.nombre }} ({{ red.pais }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Docente *</label>
+                        <select class="form-control" id="docente" name="docente" required>
+                            <option value="">Seleccione un docente</option>
+                            {% for docente in docentes %}
+                            <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Fecha Inicio *</label><input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required></div>
+                    <div class="col-md-6 mb-2"><label>Fecha Fin</label><input type="text" class="form-control" id="fecha_fin" name="fecha_fin" placeholder="Dejar vacío si activo"></div>
+                </div>
+                <div class="mb-2"><label>Actividades Destacadas *</label><textarea class="form-control" id="act_destacadas" name="act_destacadas" rows="2" required></textarea></div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>Red</th><th>Docente</th><th>Fecha Inicio</th><th>Fecha Fin</th><th>Actividades</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for rd in redes_docentes %}
+                    <tr>
+                        <td>{{ rd.red_nombre if rd.red_nombre else rd.red }}</td>
+                        <td>{{ rd.docente_nombre if rd.docente_nombre else rd.docente }}</td>
+                        <td>{{ rd.fecha_inicio }}</td>
+                        <td>{{ rd.fecha_fin or 'Activo' }}</td>
+                        <td>{{ rd.act_destacadas[:40] }}{% if rd.act_destacadas|length > 40 %}...{% endif %}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarRedDocente('{{ rd.red }}','{{ rd.docente }}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarRedDocente('{{ rd.red }}','{{ rd.docente }}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Lookup de relaciones por clave compuesta
+const _redDocenteMap = {};
+{{ redes_docentes|tojson }}.forEach(r => { _redDocenteMap[`${r.red}_${r.docente}`] = r; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
+function mostrarFormulario() {
+    document.getElementById('formularioRedDocente').style.display='block';
+    document.getElementById('formTitulo').innerText='Nueva Asignación';
+    document.getElementById('redDocenteForm').reset();
+    document.getElementById('editRed').value='';
+    document.getElementById('editDocente').value='';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioRedDocente').style.display='none';
+}
+
+function editarRedDocente(red, docente) {
+    const data = _redDocenteMap[`${red}_${docente}`];
+    if (!data) { alert('No se encontró la relación.'); return; }
+    document.getElementById('editRed').value=data.red;
+    document.getElementById('editDocente').value=data.docente;
+    document.getElementById('red').value=data.red;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('fecha_inicio').value=_fecha(data.fecha_inicio);
+    document.getElementById('fecha_fin').value=data.fecha_fin||'';
+    document.getElementById('act_destacadas').value=data.act_destacadas;
+    document.getElementById('formTitulo').innerText='Editar Asignación';
+    document.getElementById('formularioRedDocente').style.display='block';
+}
+
+function eliminarRedDocente(red, docente) {
+    if(confirm('¿Está seguro?')) window.location.href=`/red_docente/eliminar/${red}/${docente}`;
+}
+
+document.getElementById('redDocenteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editRed=document.getElementById('editRed').value;
+    const editDocente=document.getElementById('editDocente').value;
+    const url = (editRed && editDocente) ? `/red_docente/editar/${editRed}/${editDocente}` : '/red_docente/crear';
+    fetch(url,{method:'POST',body:new FormData(this)}).then(()=>{window.location.reload();});
+});
+</script>
+{% endblock %}

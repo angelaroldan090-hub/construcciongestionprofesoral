@@ -1,0 +1,106 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Apoyos Profesorales{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-hand-holding-heart"></i> Apoyos Profesorales</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nuevo Apoyo
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioApoyo" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nuevo Apoyo</h4>
+            <form method="POST" id="apoyoForm">
+                <input type="hidden" id="editId" name="editId">
+                <div class="mb-2">
+                    <label>Estudio *</label>
+                    <select class="form-control" id="estudios" name="estudios" required>
+                        <option value="">Seleccione un estudio</option>
+                        {% for estudio in estudios %}
+                        <option value="{{ estudio.id }}">{{ estudio.titulo }} - {{ estudio.universidad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label>¿Tuvo apoyo? *</label>
+                    <select class="form-control" id="con_apoyo" name="con_apoyo" required>
+                        <option value="1">Sí</option><option value="0">No</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Institución *</label><input type="text" class="form-control" id="institucion" name="institucion" required></div>
+                    <div class="col-md-6 mb-2"><label>Tipo *</label><input type="text" class="form-control" id="tipo" name="tipo" required></div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>Estudio</th><th>Con Apoyo</th><th>Institución</th><th>Tipo</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for apoyo in apoyos %}
+                    <tr>
+                        <td>{{ apoyo.estudio_titulo if apoyo.estudio_titulo else apoyo.estudios }}</td>
+                        <td>{% if apoyo.con_apoyo == 1 %}<span class="badge bg-success">Sí</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
+                        <td>{{ apoyo.institucion }}</td>
+                        <td>{{ apoyo.tipo }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarApoyo({{ apoyo.estudios }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarApoyo({{ apoyo.estudios }})"><i class="fas fa-trash"></i></button>
+                        </td
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const _apoyosMap = {};
+{{ apoyos|tojson }}.forEach(a => { _apoyosMap[String(a.estudios)] = a; });
+
+function mostrarFormulario() {
+    document.getElementById('formularioApoyo').style.display='block';
+    document.getElementById('formTitulo').innerText='Nuevo Apoyo';
+    document.getElementById('apoyoForm').reset();
+    document.getElementById('editId').value='';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioApoyo').style.display='none';
+}
+
+function editarApoyo(estudios) {
+    const data = _apoyosMap[String(estudios)];
+    if (!data) { alert('No se encontró el apoyo.'); return; }
+    document.getElementById('editId').value=data.estudios;
+    document.getElementById('estudios').value=data.estudios;
+    document.getElementById('con_apoyo').value=data.con_apoyo;
+    document.getElementById('institucion').value=data.institucion;
+    document.getElementById('tipo').value=data.tipo;
+    document.getElementById('formTitulo').innerText='Editar Apoyo';
+    document.getElementById('formularioApoyo').style.display='block';
+}
+
+function eliminarApoyo(estudios) {
+    if(confirm('¿Está seguro?')) window.location.href=`/apoyo/eliminar/${estudios}`;
+}
+
+document.getElementById('apoyoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId=document.getElementById('editId').value;
+    const url=editId?`/apoyo/editar/${editId}`:'/apoyo/crear';
+    fetch(url,{method:'POST',body:new FormData(this)}).then(()=>{window.location.reload();});
+});
+</script>
+{% endblock %}

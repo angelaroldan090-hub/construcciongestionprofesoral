@@ -1,0 +1,743 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Docentes y Estudios Realizados{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- ── PAGE HEADER ──────────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0"><i class="fas fa-user-graduation"></i> Docentes y Estudios Realizados</h3>
+        {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearDocente">
+            <i class="fas fa-plus"></i> Nuevo Docente
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- ── FLASH MESSAGES ───────────────────────────────────────────────── -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- ── MASTER: CARD POR DOCENTE ─────────────────────────────────────── -->
+    {% for docente in docentes %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0">
+                <i class="fas fa-user-tie me-1"></i>
+                {{ docente.nombres }} {{ docente.apellidos }}
+                {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud %}
+                <small class="ms-2 fw-normal">Cédula: {{ docente.cedula }}</small>
+                {% endif %}
+            </h5>
+            {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud or ("/docentes_estudios" in rutas_editar and cedula_docente and docente.cedula|string == cedula_docente|string) %}
+            <div class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-warning" onclick="editarDocente({{ docente.cedula }})" title="Editar docente">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                {% if not rutas_permitidas or "/docentes_estudios" in rutas_crud %}
+                <button class="btn btn-sm btn-danger" onclick="eliminarDocente({{ docente.cedula }})" title="Eliminar docente">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- DETAIL: estudios asignados -->
+        <div class="card-body p-2">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Universidad</th>
+                            <th>Tipo</th>
+                            <th>País</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if docente.estudios %}
+                            {% for estudio in docente.estudios %}
+                            <tr>
+                                <td>{{ estudio.id }}</td>
+                                <td>{{ estudio.titulo }}</td>
+                                <td>{{ estudio.universidad }}</td>
+                                <td>{{ estudio.tipo }}</td>
+                                <td>{{ estudio.pais }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted fst-italic py-2">Sin estudios asignados</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- MODAL: CREAR DOCENTE                                                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalCrearDocente" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-plus"></i> Nuevo Docente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('docentes_estudios.docente_crear') }}" method="POST">
+                    <div class="modal-body">
+
+                        <h6 class="fw-bold text-primary border-bottom pb-1 mb-3">
+                            <i class="fas fa-user me-1"></i> Datos del Docente
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Cédula *</label>
+                                <input type="number" class="form-control" name="cedula" required>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Nombres *</label>
+                                <input type="text" class="form-control" name="nombres" required>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Apellidos *</label>
+                                <input type="text" class="form-control" name="apellidos" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Género *</label>
+                                <select class="form-select" name="genero" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Cargo *</label>
+                                <input type="text" class="form-control" name="cargo" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha Nacimiento *</label>
+                                <input type="date" class="form-control" name="fecha_nacimiento" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Correo *</label>
+                                <input type="email" class="form-control" name="correo" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Teléfono *</label>
+                                <input type="text" class="form-control" name="telefono" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">URL CVLAC *</label>
+                                <input type="url" class="form-control" name="url_cvlac" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha Actualización *</label>
+                                <input type="date" class="form-control" name="fecha_actualizacion" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Escalafón *</label>
+                                <input type="text" class="form-control" name="escalafon" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Cat. MinCiencia</label>
+                                <input type="text" class="form-control" name="cat_minciencia">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Conv. MinCiencia *</label>
+                                <input type="text" class="form-control" name="conv_minciencia" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Nacionalidad *</label>
+                                <input type="text" class="form-control" name="nacionalidaad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Línea Investigación</label>
+                                <select class="form-select" name="linea_investigacion_principal">
+                                    <option value="">Seleccione</option>
+                                    {% for linea in lineas %}
+                                    <option value="{{ linea.id }}">{{ linea.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Perfil *</label>
+                            <textarea class="form-control" name="perfil" rows="3" required></textarea>
+                        </div>
+
+                        <!-- NUEVO ESTUDIO (opcional) -->
+                        <h6 class="fw-bold text-success border-bottom pb-1 mb-3 mt-2">
+                            <i class="fas fa-graduation-cap me-1"></i> Nuevo Estudio <span class="fw-normal text-muted">(opcional)</span>
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">ID Estudio</label>
+                                <input type="number" class="form-control" name="estudio_id">
+                            </div>
+                            <div class="col-md-8 mb-2">
+                                <label class="form-label">Título</label>
+                                <input type="text" class="form-control" name="estudio_titulo">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Universidad</label>
+                                <input type="text" class="form-control" name="estudio_universidad">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha</label>
+                                <input type="date" class="form-control" name="estudio_fecha">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" name="estudio_tipo">
+                                    <option value="">Seleccione</option>
+                                    <option value="Pregrado">Pregrado</option>
+                                    <option value="Especialización">Especialización</option>
+                                    <option value="Maestría">Maestría</option>
+                                    <option value="Doctorado">Doctorado</option>
+                                    <option value="Postdoctorado">Postdoctorado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Ciudad</label>
+                                <input type="text" class="form-control" name="estudio_ciudad">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">País</label>
+                                <input type="text" class="form-control" name="estudio_pais">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Inst. Acreditada</label>
+                                <select class="form-select" name="estudio_ins_acreditada">
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Metodología</label>
+                                <select class="form-select" name="estudio_metodologia">
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                    <option value="Mixta">Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Perfil del Egresado</label>
+                            <textarea class="form-control" name="estudio_perfil_egresado" rows="2"></textarea>
+                        </div>
+
+                        <!-- ASIGNAR ESTUDIO EXISTENTE (opcional) -->
+                        <h6 class="fw-bold text-info border-bottom pb-1 mb-3 mt-2">
+                            <i class="fas fa-link me-1"></i> Asignar Estudio Existente <span class="fw-normal text-muted">(opcional)</span>
+                        </h6>
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Estudio</label>
+                            <select class="form-select" name="estudio_asignar">
+                                <option value="">-- Ninguno --</option>
+                                {% for estudio in todos_estudios %}
+                                <option value="{{ estudio.id }}">
+                                    [{{ estudio.id }}] {{ estudio.titulo }} – {{ estudio.universidad }} ({{ estudio.tipo }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- MODAL: EDITAR DOCENTE (todo en lista)                               -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="modalEditarDocente" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Docente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- SECCIÓN 1: DATOS DEL DOCENTE -->
+                    <h6 class="fw-bold text-warning border-bottom pb-1 mb-3">
+                        <i class="fas fa-user me-1"></i> Datos del Docente
+                    </h6>
+                    <form id="formEditarDocente" method="POST">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Cédula</label>
+                                <input type="number" class="form-control" id="ed_cedula" name="cedula" readonly>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Nombres *</label>
+                                <input type="text" class="form-control" id="ed_nombres" name="nombres" required>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">Apellidos *</label>
+                                <input type="text" class="form-control" id="ed_apellidos" name="apellidos" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Género *</label>
+                                <select class="form-select" id="ed_genero" name="genero" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Cargo *</label>
+                                <input type="text" class="form-control" id="ed_cargo" name="cargo" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha Nacimiento *</label>
+                                <input type="date" class="form-control" id="ed_fecha_nacimiento" name="fecha_nacimiento" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Correo *</label>
+                                <input type="email" class="form-control" id="ed_correo" name="correo" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Teléfono *</label>
+                                <input type="text" class="form-control" id="ed_telefono" name="telefono" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">URL CVLAC *</label>
+                                <input type="url" class="form-control" id="ed_url_cvlac" name="url_cvlac" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha Actualización *</label>
+                                <input type="date" class="form-control" id="ed_fecha_actualizacion" name="fecha_actualizacion" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Escalafón *</label>
+                                <input type="text" class="form-control" id="ed_escalafon" name="escalafon" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Cat. MinCiencia</label>
+                                <input type="text" class="form-control" id="ed_cat_minciencia" name="cat_minciencia">
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Conv. MinCiencia *</label>
+                                <input type="text" class="form-control" id="ed_conv_minciencia" name="conv_minciencia" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Nacionalidad *</label>
+                                <input type="text" class="form-control" id="ed_nacionalidaad" name="nacionalidaad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Línea Investigación</label>
+                                <select class="form-select" id="ed_linea" name="linea_investigacion_principal">
+                                    <option value="">Seleccione</option>
+                                    {% for linea in lineas %}
+                                    <option value="{{ linea.id }}">{{ linea.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Perfil *</label>
+                            <textarea class="form-control" id="ed_perfil" name="perfil" rows="3" required></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end mb-4">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i> Actualizar Docente
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- SECCIÓN 2: ESTUDIOS ASIGNADOS -->
+                    <h6 class="fw-bold text-success border-bottom pb-1 mb-3">
+                        <i class="fas fa-graduation-cap me-1"></i> Estudios Asignados
+                    </h6>
+                    <div class="table-responsive mb-2">
+                        <table class="table table-sm table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Título</th>
+                                    <th>Universidad</th>
+                                    <th>Tipo</th>
+                                    <th>País</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaEstudiosEditar">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted fst-italic py-2">Sin estudios asignados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-end mb-4">
+                        <button class="btn btn-success btn-sm" id="btnNuevoEstudioEditar">
+                            <i class="fas fa-plus me-1"></i> Nuevo Estudio
+                        </button>
+                    </div>
+
+                    <!-- SECCIÓN 3: ASIGNAR ESTUDIO EXISTENTE -->
+                    <h6 class="fw-bold text-info border-bottom pb-1 mb-3">
+                        <i class="fas fa-link me-1"></i> Asignar Estudio Existente
+                    </h6>
+                    <form id="formAsignarEstudio" action="{{ url_for('docentes_estudios.asignar') }}" method="POST">
+                        <input type="hidden" id="asignar_docente" name="docente">
+                        <div class="row align-items-end mb-4">
+                            <div class="col-md-9 mb-2">
+                                <label class="form-label">Seleccionar Estudio</label>
+                                <select class="form-select" name="estudio" required>
+                                    <option value="">-- Seleccione un estudio --</option>
+                                    {% for estudio in todos_estudios %}
+                                    <option value="{{ estudio.id }}">
+                                        [{{ estudio.id }}] {{ estudio.titulo }} – {{ estudio.universidad }} ({{ estudio.tipo }}){% if estudio.asignado %} ✓ ya asignado{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="fas fa-link me-1"></i> Asignar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal: Crear Estudio -->
+    <div class="modal fade" id="modalCrearEstudio" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-graduation-cap"></i> Nuevo Estudio Realizado</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('docentes_estudios.estudio_crear') }}" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" id="ce_docente" name="docente">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">ID *</label>
+                                <input type="number" class="form-control" name="id" required>
+                            </div>
+                            <div class="col-md-8 mb-2">
+                                <label class="form-label">Título *</label>
+                                <input type="text" class="form-control" name="titulo" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Universidad *</label>
+                                <input type="text" class="form-control" name="universidad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" name="fecha" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Tipo *</label>
+                                <select class="form-select" name="tipo" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="Pregrado">Pregrado</option>
+                                    <option value="Especialización">Especialización</option>
+                                    <option value="Maestría">Maestría</option>
+                                    <option value="Doctorado">Doctorado</option>
+                                    <option value="Postdoctorado">Postdoctorado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Ciudad *</label>
+                                <input type="text" class="form-control" name="ciudad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">País *</label>
+                                <input type="text" class="form-control" name="pais" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Inst. Acreditada *</label>
+                                <select class="form-select" name="ins_acreditada" required>
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Metodología *</label>
+                                <select class="form-select" name="metodologia" required>
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                    <option value="Mixta">Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Perfil del Egresado *</label>
+                            <textarea class="form-control" name="perfil_egresado" rows="2" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Estudio -->
+    <div class="modal fade" id="modalEditarEstudio" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Estudio Realizado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formEditarEstudio" method="POST">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label">ID</label>
+                                <input type="number" class="form-control" id="ee_id" readonly>
+                            </div>
+                            <div class="col-md-8 mb-2">
+                                <label class="form-label">Título *</label>
+                                <input type="text" class="form-control" id="ee_titulo" name="titulo" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Universidad *</label>
+                                <input type="text" class="form-control" id="ee_universidad" name="universidad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" id="ee_fecha" name="fecha" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Tipo *</label>
+                                <select class="form-select" id="ee_tipo" name="tipo" required>
+                                    <option value="">Seleccione</option>
+                                    <option value="Pregrado">Pregrado</option>
+                                    <option value="Especialización">Especialización</option>
+                                    <option value="Maestría">Maestría</option>
+                                    <option value="Doctorado">Doctorado</option>
+                                    <option value="Postdoctorado">Postdoctorado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Ciudad *</label>
+                                <input type="text" class="form-control" id="ee_ciudad" name="ciudad" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">País *</label>
+                                <input type="text" class="form-control" id="ee_pais" name="pais" required>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Inst. Acreditada *</label>
+                                <select class="form-select" id="ee_ins_acreditada" name="ins_acreditada" required>
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <label class="form-label">Metodología *</label>
+                                <select class="form-select" id="ee_metodologia" name="metodologia" required>
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                    <option value="Mixta">Mixta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Docente *</label>
+                            <select class="form-select" id="ee_docente" name="docente" required>
+                                <option value="">Seleccione</option>
+                                {% for docente in docentes %}
+                                <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }} ({{ docente.cedula }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Perfil del Egresado *</label>
+                            <textarea class="form-control" id="ee_perfil_egresado" name="perfil_egresado" rows="2" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /container-fluid -->
+
+<script>
+const _docentesMap = {};
+const _estudiosMap = {};
+let _cedulaActual  = null;
+
+{{ docentes|tojson }}.forEach(d => { _docentesMap[String(d.cedula)] = d; });
+{{ todos_estudios|tojson }}.forEach(e => { _estudiosMap[String(e.id)] = e; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
+// ── Docente: Editar ───────────────────────────────────────────────────────────
+function editarDocente(cedula) {
+    const d = _docentesMap[String(cedula)];
+    if (!d) { alert('No se encontraron datos del docente.'); return; }
+
+    _cedulaActual = cedula;
+
+    document.getElementById('formEditarDocente').action     = `/docentes_estudios/docente/editar/${cedula}`;
+    document.getElementById('ed_cedula').value              = d.cedula;
+    document.getElementById('ed_nombres').value             = d.nombres;
+    document.getElementById('ed_apellidos').value           = d.apellidos;
+    document.getElementById('ed_genero').value              = d.genero;
+    document.getElementById('ed_cargo').value               = d.cargo;
+    document.getElementById('ed_fecha_nacimiento').value    = _fecha(d.fecha_nacimiento);
+    document.getElementById('ed_correo').value              = d.correo;
+    document.getElementById('ed_telefono').value            = d.telefono;
+    document.getElementById('ed_url_cvlac').value           = d.url_cvlac;
+    document.getElementById('ed_fecha_actualizacion').value = _fecha(d.fecha_actualizacion);
+    document.getElementById('ed_escalafon').value           = d.escalafon;
+    document.getElementById('ed_cat_minciencia').value      = d.cat_minciencia || '';
+    document.getElementById('ed_conv_minciencia').value     = d.conv_minciencia;
+    document.getElementById('ed_nacionalidaad').value       = d.nacionalidaad;
+    document.getElementById('ed_linea').value               = d.linea_investigacion_principal || '';
+    document.getElementById('ed_perfil').value              = d.perfil;
+
+    // Cargar estudios en la tabla
+    cargarEstudiosEnTabla(d);
+
+    // Configurar asignar
+    document.getElementById('asignar_docente').value = cedula;
+
+    new bootstrap.Modal(document.getElementById('modalEditarDocente')).show();
+}
+
+// ── Cargar estudios en tabla del modal editar ─────────────────────────────────
+function cargarEstudiosEnTabla(docente) {
+    const tbody   = document.getElementById('tablaEstudiosEditar');
+    const estudios = docente.estudios || [];
+
+    if (estudios.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted fst-italic py-2">Sin estudios asignados</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = estudios.map(e => `
+        <tr>
+            <td>${e.id}</td>
+            <td>${e.titulo}</td>
+            <td>${e.universidad}</td>
+            <td>${e.tipo}</td>
+            <td>${e.pais || '-'}</td>
+            <td class="text-nowrap">
+                <button class="btn btn-sm btn-warning py-0 px-1" onclick="abrirEditarEstudio(${e.id})" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger py-0 px-1" onclick="eliminarEstudio(${e.id})" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <a href="/docentes_estudios/desasignar/${docente.cedula}/${e.id}"
+                   class="btn btn-sm btn-secondary py-0 px-1"
+                   onclick="return confirm('¿Desasignar este estudio?')" title="Desasignar">
+                    <i class="fas fa-unlink"></i>
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ── Botón Nuevo Estudio desde modal Editar ────────────────────────────────────
+document.getElementById('btnNuevoEstudioEditar').addEventListener('click', function() {
+    document.getElementById('ce_docente').value = _cedulaActual;
+    bootstrap.Modal.getInstance(document.getElementById('modalEditarDocente')).hide();
+    setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('modalCrearEstudio')).show();
+    }, 400);
+});
+
+// ── Docente: Eliminar ─────────────────────────────────────────────────────────
+function eliminarDocente(cedula) {
+    if (confirm('¿Eliminar este docente?\nEsto también eliminará sus estudios y relaciones asociadas.')) {
+        window.location.href = `/docentes_estudios/docente/eliminar/${cedula}`;
+    }
+}
+
+// ── Estudio: Editar ───────────────────────────────────────────────────────────
+function abrirEditarEstudio(id) {
+    const e = _estudiosMap[String(id)];
+    if (!e) { alert('No se encontraron datos del estudio.'); return; }
+    document.getElementById('formEditarEstudio').action    = `/docentes_estudios/estudio/editar/${id}`;
+    document.getElementById('ee_id').value                 = e.id;
+    document.getElementById('ee_titulo').value             = e.titulo;
+    document.getElementById('ee_universidad').value        = e.universidad;
+    document.getElementById('ee_fecha').value              = _fecha(e.fecha);
+    document.getElementById('ee_tipo').value               = e.tipo;
+    document.getElementById('ee_ciudad').value             = e.ciudad || '';
+    document.getElementById('ee_pais').value               = e.pais || '';
+    document.getElementById('ee_ins_acreditada').value     = e.ins_acreditada != null ? String(e.ins_acreditada) : '1';
+    document.getElementById('ee_metodologia').value        = e.metodologia || 'Presencial';
+    document.getElementById('ee_docente').value            = e.docente || '';
+    document.getElementById('ee_perfil_egresado').value    = e.perfil_egresado || '';
+    new bootstrap.Modal(document.getElementById('modalEditarEstudio')).show();
+}
+
+// ── Estudio: Eliminar ─────────────────────────────────────────────────────────
+function eliminarEstudio(id) {
+    if (confirm('¿Eliminar este estudio permanentemente?\nSe eliminará de todos los docentes a los que esté asignado.')) {
+        window.location.href = `/docentes_estudios/estudio/eliminar/${id}`;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Experiencias Laborales{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0"><i class="fas fa-briefcase"></i> Experiencias Laborales</h3>
+        <button class="btn btn-light btn-sm" onclick="mostrarFormulario()">
+            <i class="fas fa-plus"></i> Nueva Experiencia
+        </button>
+    </div>
+    <div class="card-body">
+        <!-- Formulario unificado -->
+        <div id="formularioExperiencia" style="display: none;" class="mb-4 border p-3 rounded">
+            <h4 id="formTitulo">Nueva Experiencia</h4>
+            <form method="POST" id="experienciaForm">
+                <input type="hidden" id="editId" name="editId">
+                <div class="mb-2">
+                    <label>Docente *</label>
+                    <select class="form-control" id="docente" name="docente" required>
+                        <option value="">Seleccione un docente</option>
+                        {% for docente in docentes %}
+                        <option value="{{ docente.cedula }}">{{ docente.nombres }} {{ docente.apellidos }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2"><label>Cargo *</label><input type="text" class="form-control" id="nombre_cargo" name="nombre_cargo" required></div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Institución *</label><input type="text" class="form-control" id="institucion" name="institucion" required></div>
+                    <div class="col-md-6 mb-2"><label>Tipo *</label>
+                        <select class="form-control" id="tipo" name="tipo" required>
+                            <option value="Docente">Docente</option><option value="Investigador">Investigador</option>
+                            <option value="Administrativo">Administrativo</option><option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2"><label>Fecha Inicio *</label><input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required></div>
+                    <div class="col-md-6 mb-2"><label>Fecha Fin</label><input type="date" class="form-control" id="fecha_fin" name="fecha_fin"></div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="ocultarFormulario()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Tabla de listado -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>ID</th><th>Docente</th><th>Cargo</th><th>Institución</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead>
+                <tbody>
+                    {% for experiencia in experiencias %}
+                    <tr>
+                        <td>{{ experiencia.id }}</td>
+                        <td>{{ experiencia.docente_nombre if experiencia.docente_nombre else experiencia.docente }}</td>
+                        <td>{{ experiencia.nombre_cargo }}</td>
+                        <td>{{ experiencia.institucion }}</td>
+                        <td>{{ experiencia.fecha_inicio }}</td>
+                        <td>{{ experiencia.fecha_fin or 'Actual' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editarExperiencia({{ experiencia.id }})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarExperiencia({{ experiencia.id }})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const _experienciasMap = {};
+{{ experiencias|tojson }}.forEach(e => { _experienciasMap[String(e.id)] = e; });
+
+function _fecha(val) { return val ? String(val).split('T')[0] : ''; }
+
+function mostrarFormulario() {
+    document.getElementById('formularioExperiencia').style.display='block';
+    document.getElementById('formTitulo').innerText='Nueva Experiencia';
+    document.getElementById('experienciaForm').reset();
+    document.getElementById('editId').value='';
+}
+
+function ocultarFormulario() {
+    document.getElementById('formularioExperiencia').style.display='none';
+}
+
+function editarExperiencia(id) {
+    const data = _experienciasMap[String(id)];
+    if (!data) { alert('No se encontró la experiencia.'); return; }
+    document.getElementById('editId').value=data.id;
+    document.getElementById('docente').value=data.docente;
+    document.getElementById('nombre_cargo').value=data.nombre_cargo;
+    document.getElementById('institucion').value=data.institucion;
+    document.getElementById('tipo').value=data.tipo;
+    document.getElementById('fecha_inicio').value=_fecha(data.fecha_inicio);
+    document.getElementById('fecha_fin').value=_fecha(data.fecha_fin)||'';
+    document.getElementById('formTitulo').innerText='Editar Experiencia';
+    document.getElementById('formularioExperiencia').style.display='block';
+}
+
+function eliminarExperiencia(id) {
+    if(confirm('¿Está seguro?')) window.location.href=`/experiencia/eliminar/${id}`;
+}
+
+document.getElementById('experienciaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editId=document.getElementById('editId').value;
+    const url=editId?`/experiencia/editar/${editId}`:'/experiencia/crear';
+    fetch(url,{method:'POST',body:new FormData(this)}).then(()=>{window.location.reload();});
+});
+</script>
+{% endblock %}
