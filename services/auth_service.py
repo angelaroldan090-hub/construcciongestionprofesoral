@@ -49,7 +49,6 @@ class AuthService:
             if fk_table.lower() == tabla_destino.lower():
                 self._fk_cache[cache_key] = col["column_name"]
                 return col["column_name"]
-        # Fallbacks con los nombres REALES de la BD
         defaults = {
             "rol_usuario->usuario": "usuario_id",
             "rol_usuario->rol":     "rol_id",
@@ -61,10 +60,17 @@ class AuthService:
     # ── Login ──────────────────────────────────────────────────────────────────
 
     def login(self, email, contrasena):
+        print(f"[DEBUG auth_service] login llamado para: {email}")
         """
-        Retorna (True, dict) con token, nombre, roles, rutas_permitidas,
-        debe_cambiar_contrasena — o (False, mensaje_error).
+        Autentica via API C#. Si la API no está disponible, autentica
+        directo desde PostgreSQL con bcrypt.
+        Retorna (True, dict) o (False, mensaje_error).
         """
+        token = ""
+        nombre = email
+        debe_cambiar = False
+
+        # Intentar autenticar via API C#
         try:
             r = requests.post(
                 f"{self.base_url}/api/autenticacion/token",
@@ -77,25 +83,35 @@ class AuthService:
                 },
                 timeout=10
             )
-        except requests.RequestException as ex:
-            return (False, f"Error de conexión con la API: {ex}")
+            if r.ok:
+                datos_auth = r.json()
+                token = datos_auth.get("token", "")
+                nombre = (datos_auth.get("nombre_completo")
+                          or datos_auth.get("nombre")
+                          or email)
+                debe_cambiar = datos_auth.get("debe_cambiar_contrasena", False)
+            else:
+                try:
+                    msg = r.json().get("mensaje", r.text[:200])
+                except Exception:
+                    msg = r.text[:200]
+                return (False, msg)
 
-        if not r.ok:
-            try:
-                msg = r.json().get("mensaje", r.text[:200])
-            except Exception:
-                msg = r.text[:200]
-            return (False, msg)
+        except requests.RequestException:
+            # API no disponible → autenticar directo con PostgreSQL
+            exito, resultado = self._login_postgres(email, contrasena)
+            if not exito:
+                return (False, resultado)
+            nombre = resultado
+            token = ""
+            debe_cambiar = False
 
-        datos_auth = r.json()
-        token = datos_auth.get("token", "")
-        nombre = (datos_auth.get("nombre_completo")
-                  or datos_auth.get("nombre")
-                  or email)
-        debe_cambiar = datos_auth.get("debe_cambiar_contrasena", False)
+        # Obtener roles, rutas y cédula directo desde PostgreSQL
+        roles, rutas, rutas_crud, rutas_editar = self._obtener_roles_postgres(email)
+        cedula_docente = self._obtener_cedula_postgres(email)
 
-        roles, rutas, rutas_crud, rutas_editar = self._obtener_roles_y_rutas(email, token)
-        cedula_docente = self._obtener_cedula_docente(email, token)
+        print(f"[DEBUG auth_service] roles: {roles}")
+        print(f"[DEBUG auth_service] rutas: {rutas}")
 
         return (True, {
             "token": token,
@@ -108,141 +124,120 @@ class AuthService:
             "debe_cambiar_contrasena": debe_cambiar,
         })
 
-    def _obtener_roles_y_rutas(self, email, token):
-        """Intenta ConsultasController; si falla usa fallback de 5 GETs."""
-        pk_usuario    = self._obtener_pk("usuario")    # id
-        pk_rol        = self._obtener_pk("rol")        # id
-        pk_ruta       = self._obtener_pk("ruta")       # id
-        fk_ru_usuario = self._obtener_fk("rol_usuario", "usuario")  # usuario_id
-        fk_ru_rol     = self._obtener_fk("rol_usuario", "rol")      # rol_id
-        fk_rr_rol     = self._obtener_fk("rutarol", "rol")           # fkidrol
-        fk_rr_ruta    = self._obtener_fk("rutarol", "ruta")          # fkidruta
+    # ── Autenticación directo PostgreSQL (fallback sin API C#) ────────────────
 
-        if all([fk_ru_usuario, fk_ru_rol, fk_rr_rol, fk_rr_ruta]):
-            # JOIN por email del usuario (campo único, no la PK entera)
-            sql = (
-                f"SELECT r.nombre AS nombre_rol, ruta_t.ruta, rr.tipo AS tipo "
-                f"FROM usuario u "
-                f"JOIN rol_usuario rolu ON u.id = rolu.{fk_ru_usuario} "
-                f"JOIN rol r ON rolu.{fk_ru_rol} = r.{pk_rol} "
-                f"JOIN rutarol rr ON r.{pk_rol} = rr.{fk_rr_rol} "
-                f"JOIN ruta ruta_t ON rr.{fk_rr_ruta} = ruta_t.{pk_ruta} "
-                f"WHERE u.email = @email"
-            )
+    def _login_postgres(self, email, contrasena):
+        import psycopg2
+        import bcrypt
+        from config import DB_CONFIG
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            conn.set_client_encoding('UTF8')
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT password, nombre_completo, activo
+                FROM usuario
+                WHERE email = %s
+            """, (email,))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+
+            if not row:
+                return (False, "Usuario no encontrado.")
+
+            hash_bd, nombre, activo = row
+
+            if not activo:
+                return (False, "Usuario inactivo.")
+
+            if not bcrypt.checkpw(contrasena.encode('utf-8'), hash_bd.encode('utf-8')):
+                return (False, "Contraseña incorrecta.")
+
+            return (True, nombre or email)
+
+        except ImportError:
+            return (False, "bcrypt no instalado. Ejecuta: pip install bcrypt")
+        except Exception as ex:
+            return (False, f"Error de conexión: {ex}")
+
+    # ── Roles y rutas directo PostgreSQL ──────────────────────────────────────
+
+    def _obtener_roles_postgres(self, email):
+        import psycopg2
+        from config import DB_CONFIG
+        try:
+            conn = psycopg2.connect(**DB_CONFIG)
+            conn.set_client_encoding('UTF8')
+            cur = conn.cursor()
+
+            # Roles
+            cur.execute("""
+                SELECT r.nombre
+                FROM rol r
+                JOIN rol_usuario ru ON ru.rol_id = r.id
+                JOIN usuario u ON u.id = ru.usuario_id
+                WHERE u.email = %s AND r.activo = TRUE
+            """, (email,))
+            roles = [row[0] for row in cur.fetchall()]
+
+            # Rutas permitidas
             try:
-                headers = {"Content-Type": "application/json"}
-                if token:
-                    headers["Authorization"] = f"Bearer {token}"
-                r = requests.post(
-                    f"{self.base_url}/api/consultas/ejecutarconsultaparametrizada",
-                    json={"consulta": sql, "parametros": {"email": email}},
-                    headers=headers,
-                    timeout=10
-                )
-                if r.ok:
-                    resultados = r.json().get("resultados", [])
-                    roles = list({row["nombre_rol"] for row in resultados})
-                    rutas = list({row["ruta"] for row in resultados})
-                    rutas_crud = list({row["ruta"] for row in resultados if row.get("tipo", "crud") == "crud"})
-                    rutas_editar = list({row["ruta"] for row in resultados if row.get("tipo") == "editar"})
-                    return (roles, rutas, rutas_crud, rutas_editar)
+                cur.execute("""
+                    SELECT DISTINCT rt.ruta,
+                           COALESCE(rr.tipo, 'crud') AS tipo
+                    FROM ruta rt
+                    JOIN rutarol rr ON rr.fkidruta = rt.id
+                    JOIN rol r ON r.id = rr.fkidrol
+                    JOIN rol_usuario ru ON ru.rol_id = r.id
+                    JOIN usuario u ON u.id = ru.usuario_id
+                    WHERE u.email = %s AND r.activo = TRUE
+                """, (email,))
+                filas = cur.fetchall()
             except Exception:
-                pass
+                cur.execute("""
+                    SELECT DISTINCT rt.ruta, 'crud' AS tipo
+                    FROM ruta rt
+                    JOIN rutarol rr ON rr.fkidruta = rt.id
+                    JOIN rol r ON r.id = rr.fkidrol
+                    JOIN rol_usuario ru ON ru.rol_id = r.id
+                    JOIN usuario u ON u.id = ru.usuario_id
+                    WHERE u.email = %s AND r.activo = TRUE
+                """, (email,))
+                filas = cur.fetchall()
 
-        return self._obtener_roles_y_rutas_fallback(email, token)
+            rutas        = [f[0] for f in filas]
+            rutas_crud   = [f[0] for f in filas if f[1] == 'crud']
+            rutas_editar = [f[0] for f in filas if f[1] == 'editar']
 
-    def _obtener_roles_y_rutas_fallback(self, email, token):
-        headers = {"Content-Type": "application/json"}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+            cur.close()
+            conn.close()
+            return (roles, rutas, rutas_crud, rutas_editar)
 
-        def get(tabla):
-            try:
-                r = requests.get(
-                    f"{self.base_url}/api/{tabla}",
-                    params={"limite": 999999},
-                    headers=headers,
-                    timeout=10
-                )
-                return r.json().get("datos", []) if r.ok else []
-            except Exception:
-                return []
-
-        todos_ru    = get("rol_usuario")
-        todos_roles = get("rol")
-        todos_rr    = get("rutarol")
-        todos_rutas = get("ruta")
-
-        fk_ru_usuario = self._obtener_fk("rol_usuario", "usuario") or "fkemail"
-        fk_ru_rol     = self._obtener_fk("rol_usuario", "rol")     or "fkidrol"
-        fk_rr_rol     = self._obtener_fk("rutarol", "rol")         or "fkidrol"
-        fk_rr_ruta    = self._obtener_fk("rutarol", "ruta")        or "fkidruta"
-        pk_rol        = self._obtener_pk("rol")
-        pk_ruta       = self._obtener_pk("ruta")
-
-        id_roles_usuario = {
-            str(ru[fk_ru_rol])
-            for ru in todos_ru
-            if str(ru.get(fk_ru_usuario, "")) == str(email)
-        }
-        rol_by_id = {str(r[pk_rol]): r["nombre"] for r in todos_roles}
-        roles = [rol_by_id[rid] for rid in id_roles_usuario if rid in rol_by_id]
-
-        id_rutas = {
-            str(rr[fk_rr_ruta])
-            for rr in todos_rr
-            if str(rr.get(fk_rr_rol, "")) in id_roles_usuario
-        }
-        ruta_by_id = {str(rt[pk_ruta]): rt["ruta"] for rt in todos_rutas}
-        rutas = [ruta_by_id[rid] for rid in id_rutas if rid in ruta_by_id]
-
-        id_rutas_crud = {
-            str(rr[fk_rr_ruta])
-            for rr in todos_rr
-            if str(rr.get(fk_rr_rol, "")) in id_roles_usuario
-            and rr.get("tipo", "crud") == "crud"
-        }
-        rutas_crud = [ruta_by_id[rid] for rid in id_rutas_crud if rid in ruta_by_id]
-
-        id_rutas_editar = {
-            str(rr[fk_rr_ruta])
-            for rr in todos_rr
-            if str(rr.get(fk_rr_rol, "")) in id_roles_usuario
-            and rr.get("tipo") == "editar"
-        }
-        rutas_editar = [ruta_by_id[rid] for rid in id_rutas_editar if rid in ruta_by_id]
-
-        return (roles, rutas, rutas_crud, rutas_editar)
+        except Exception as ex:
+            print(f"[AuthService] Error obteniendo roles/rutas: {ex}")
+            return ([], [], [], [])
 
     # ── Cédula del docente vinculado al usuario ───────────────────────────────
 
-    def _obtener_cedula_docente(self, email: str, token: str):
-        """Busca la cédula del docente cuyo correo coincide con el email del usuario."""
+    def _obtener_cedula_postgres(self, email):
+        import psycopg2
+        from config import DB_CONFIG
         try:
-            headers = {"Content-Type": "application/json"}
-            if token:
-                headers["Authorization"] = f"Bearer {token}"
-            r = requests.post(
-                f"{self.base_url}/api/consultas/ejecutarconsultaparametrizada",
-                json={
-                    "consulta": "SELECT cedula FROM docente WHERE correo = @email",
-                    "parametros": {"email": email}
-                },
-                headers=headers,
-                timeout=10
-            )
-            if r.ok:
-                rows = r.json().get("resultados", [])
-                if rows:
-                    return str(rows[0].get("cedula", ""))
+            conn = psycopg2.connect(**DB_CONFIG)
+            conn.set_client_encoding('UTF8')
+            cur = conn.cursor()
+            cur.execute("SELECT cedula FROM docente WHERE correo = %s", (email,))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            return str(row[0]) if row else None
         except Exception:
-            pass
-        return None
+            return None
 
     # ── Cambiar contraseña ─────────────────────────────────────────────────────
 
     def actualizar_contrasena(self, email, nueva_contrasena, token=None):
-        # Usamos 'email' como campo de búsqueda (es UNIQUE aunque no sea PK)
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
